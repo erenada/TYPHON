@@ -298,6 +298,7 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - **Key Dependencies:** Custom Genion build is critical path item
 - **Testing Strategy:** Will focus on individual modules first, then integration testing
 - **Environment Setup (Dec 2024):** Successfully resolved conda dependency conflicts by removing strict version pins. Final environment uses Python 3.9.23, R-base 4.4.3, and latest compatible package versions.
+- **Additional Tools Added (07/15/2025):** Successfully added missing bioinformatics tools: bedops, clustalo, clustalw. Environment now matches original pipeline requirements except for custom Genion build.
 
 ---
 

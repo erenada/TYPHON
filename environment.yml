@@ -1,0 +1,33 @@
+name: typhon_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - minimap2
+  - longgf
+  - samtools
+  - pygtftk
+  - blast
+  - bedtools
+  - seqkit
+  - bedops
+  - clustalo
+  - clustalw
+  - biopython
+  - r-base
+  - r-dplyr
+  - r-tidyverse
+  - r-data.table
+  - r-magrittr
+  - r-openxlsx
+  - r-stringr
+  - r-tidyr
+  - bioconductor-biostrings
+  - r-seqinr
+  - r-pafr
+  - seqtk
+  - pyyaml
+  - pandas
+  - openpyxl 
