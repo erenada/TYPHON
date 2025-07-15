@@ -1,0 +1,32 @@
+--- /tmp/genion_original/src/annotate.cpp	2025-07-15 17:05:09.997276001 -0400
++++ Genion_files/annotate.cpp	2025-07-15 17:04:46.388476519 -0400
+@@ -1,4 +1,3 @@
+-
+ #include <utility>
+ 
+ #include <unordered_set>
+@@ -27,6 +26,7 @@
+ #include <iostream>
+ 
+ #include <cassert>
++#include <filesystem>
+ 
+ using std::string;
+ using std::ostream;
+@@ -1233,7 +1233,15 @@
+             }
+         }
+        
+-
++        logfile.close();
++        outfile_fail.close();
++        // Remove empty files if they exist and are empty
++        if (std::filesystem::exists(log_path) && std::filesystem::file_size(log_path) == 0) {
++            std::filesystem::remove(log_path);
++        }
++        if (std::filesystem::exists(output_path + ".fail") && std::filesystem::file_size(output_path + ".fail") == 0) {
++            std::filesystem::remove(output_path + ".fail");
++        }
+         return 0;  
+     }
+        

@@ -3,7 +3,7 @@
 **Project:** Cleanup and improvement of chimeric RNA detection pipeline  
 **Author:** Eren Ada, PhD  
 **Created:** December 2024  
-**Last Updated:** December 2024  
+**Last Updated:** July 2025  
 
 ## Project Overview
 
@@ -20,13 +20,13 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
   - [ ] Clean up any redundant or outdated files
   - [ ] Organize documentation files logically
 
-### 1.2 Python Package Setup
-- [ ] Create proper `setup.py` for package installation
-  - [ ] Define package metadata and dependencies
-  - [ ] Set up entry points for CLI tools
-  - [ ] Configure development and production dependencies
-- [ ] Verify `pyproject.toml` compatibility (optional)
-- [ ] Test editable installation (`pip install -e .`)
+### 1.2 Python Module Structure ~~Python Package Setup~~
+- [x] ~~Create proper `setup.py` for package installation~~ (Not needed - pipeline project)
+  - [x] ~~Define package metadata and dependencies~~ (Not needed)
+  - [x] ~~Set up entry points for CLI tools~~ (Will use direct script execution)
+  - [x] ~~Configure development and production dependencies~~ (Using environment.yml)
+- [x] ~~Verify `pyproject.toml` compatibility (optional)~~ (Not needed)
+- [x] ~~Test editable installation (`pip install -e .`)~~ (Not needed)
 
 ### 1.3 Conda Environment Management
 - [x] Review and update `environment.yml`
@@ -37,22 +37,22 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - [ ] Create environment setup documentation
 - [ ] Test environment on clean system
 
-### 1.4 Conda Package Recipe
-- [ ] Update `conda-recipe/meta.yaml`
-  - [ ] Fix package dependencies and versions
-  - [ ] Test conda package building
-  - [ ] Verify installation from built package
+~~### 1.4 Conda Package Recipe~~
+~~- [ ] Update `conda-recipe/meta.yaml`~~
+  ~~- [ ] Fix package dependencies and versions~~
+  ~~- [ ] Test conda package building~~
+  ~~- [ ] Verify installation from built package~~
 
 ---
 
 ## Phase 2: Custom Genion Build & Integration
 
 ### 2.1 Genion Setup Script
-- [ ] Test and fix `setup_genion.py`
-  - [ ] Verify git repository cloning works
-  - [ ] Test patch application process
-  - [ ] Ensure compilation succeeds on target systems
-  - [ ] Validate binary output and functionality
+- [x] Test and fix `setup_genion.py`
+  - [x] Verify git repository cloning works
+  - [x] Test patch application process
+  - [x] Ensure compilation succeeds on target systems
+  - [x] Validate binary output and functionality
 - [ ] Create fallback installation methods
 - [ ] Document custom Genion requirements
 
@@ -228,25 +228,19 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 
 ---
 
-## Phase 7: Packaging & Distribution
+## Phase 7: Pipeline Distribution & Installation
 
-### 7.1 Python Package Distribution
-- [ ] Finalize setup.py configuration
-- [ ] Test PyPI packaging (test.pypi.org)
-- [ ] Create release versioning strategy
-- [ ] Set up automated testing (optional)
+### 7.1 Repository Setup
+- [ ] Finalize GitHub repository structure
+- [ ] Create installation documentation
+- [ ] Set up version tagging strategy
+- [ ] Document system requirements
 
-### 7.2 Conda Package Distribution
-- [ ] Finalize conda recipe
-- [ ] Test conda-forge submission process
-- [ ] Create bioconda package (optional)
-- [ ] Document installation methods
-
-### 7.3 Container Support
-- [ ] Create Dockerfile (optional)
+### 7.2 Container Support (Optional)
+- [ ] Create Dockerfile
 - [ ] Test container functionality
 - [ ] Document container usage
-- [ ] Publish to container registry (optional)
+- [ ] Publish to container registry
 
 ---
 
@@ -274,18 +268,18 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 
 ## Progress Tracking
 
-**Current Phase:** Phase 1 - Environment & Project Structure Setup  
-**Overall Progress:** Phase 1 - 50% complete (1.1 ✓, 1.3 mostly ✓)  
-**Next Milestone:** Complete Phase 1.2 Python Package Setup and testing  
+**Current Phase:** Phase 2 - Custom Genion Build & Integration  
+**Overall Progress:** Phase 1 - Complete, Phase 2.1 - Complete  
+**Next Milestone:** Complete Phase 2.2 Genion Reference Preparation  
 
 ### Phase Completion Status
-- [ ] Phase 1: Environment & Project Structure Setup
+- [x] Phase 1: Environment & Project Structure Setup
 - [ ] Phase 2: Custom Genion Build & Integration  
 - [ ] Phase 3: Core Pipeline Implementation
 - [ ] Phase 4: Module Testing & Validation
 - [ ] Phase 5: Output Processing & Analysis
 - [ ] Phase 6: Documentation & User Experience
-- [ ] Phase 7: Packaging & Distribution
+- [ ] Phase 7: Pipeline Distribution & Installation
 - [ ] Phase 8: Final Testing & Release Preparation
 
 ---
@@ -294,11 +288,13 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 
 *This section will be updated with important decisions, changes to scope, and lessons learned during development.*
 
-- **Initial Assessment:** Pipeline has solid foundation with working modules but needs integration and proper packaging
+- **Initial Assessment:** Pipeline has solid foundation with working modules but needs integration and proper orchestration
 - **Key Dependencies:** Custom Genion build is critical path item
 - **Testing Strategy:** Will focus on individual modules first, then integration testing
 - **Environment Setup (Dec 2024):** Successfully resolved conda dependency conflicts by removing strict version pins. Final environment uses Python 3.9.23, R-base 4.4.3, and latest compatible package versions.
 - **Additional Tools Added (07/15/2025):** Successfully added missing bioinformatics tools: bedops, clustalo, clustalw. Environment now matches original pipeline requirements except for custom Genion build.
+- **Project Scope Clarification (07/15/2025):** Confirmed this is a pipeline project, not a distributable package. Removed packaging-related phases and focused on pipeline orchestration and direct execution.
+- **Custom Genion Setup (07/15/2025):** Successfully implemented and tested custom Genion build with debug mode enabled for comprehensive chimeric RNA output.
 
 ---
 
@@ -308,5 +304,4 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - [LongGF Documentation](link-to-longgf)
 - [Genion Repository](https://github.com/vpc-ccg/genion)
 - [JaffaL Documentation](https://github.com/Oshlack/JAFFA)
-- [Conda Packaging Guide](https://docs.conda.io/projects/conda-build/)
-- [Python Packaging Guide](https://packaging.python.org/) 
+- [Conda Environment Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 
