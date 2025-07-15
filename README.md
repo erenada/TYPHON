@@ -3,7 +3,7 @@
 **Developers:** Harry Kane, PhD; Eren Ada, PhD  
 **Version:** 0.1.0  
 
-A Python package designed to provide a robust, modular, and user-friendly pipeline for chimeric RNA detection using tools such as LongGF, Genion, and JaffaL.
+A modular bioinformatics pipeline designed to provide robust, comprehensive chimeric RNA detection for long-read RNA sequencing data using tools such as LongGF, Genion (custom build), and JaffaL.
 
 ## Project Status
 
@@ -13,7 +13,7 @@ A Python package designed to provide a robust, modular, and user-friendly pipeli
 
 ```
 Typhon_pipeline/
-├── typhon/                    # Main Python package
+├── typhon/                    # Main pipeline modules
 │   ├── modules/              # Pipeline step modules (longgf, genion, jaffal)
 │   ├── utils/                # Utility functions
 │   └── scripts/              # R scripts and other supporting scripts
@@ -27,8 +27,8 @@ Typhon_pipeline/
 │   └── data/                 # Small example datasets
 ├── docs/                     # Documentation
 ├── scripts/                  # Development and setup scripts
-├── packaging/                # Packaging resources (conda, docker)
 ├── bin/                      # Compiled binaries (custom Genion)
+├── Genion_files/             # Custom Genion patch and source files
 └── .archive/                 # Archive for old files during refactoring
 ```
 
@@ -53,17 +53,26 @@ cd TYPHON
 # Install Java 11 (if not already installed)
 sudo apt install openjdk-11-jre  # Ubuntu/Debian
 
-# Create conda environment (includes rename utility)
+# Create conda environment (includes all bioinformatics tools and dependencies)
 conda env create -f environment.yml
 conda activate typhon_env
 
-# Install the package in development mode (coming soon)
-# pip install -e .
+# Build custom Genion with debug mode enabled
+python setup_genion.py
+
+# Verify installation
+./bin/genion --version  # Should show: 1.2.3-dirty
 ```
 
 ## Usage
 
-*Coming soon - package is under development*
+*Coming soon - pipeline is under development*
+
+The pipeline will support:
+- Long-read RNA sequencing data (FASTQ format)
+- Multiple reference types (Gencode, Ensembl)
+- Comprehensive chimeric RNA detection using three complementary tools
+- Automated reference preparation and processing
 
 ## Contributing
 
