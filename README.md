@@ -38,7 +38,28 @@ See `pipeline_dev_roadmap.md` for detailed development progress tracking.
 
 ## Installation
 
-*Coming soon - package is under development*
+### Prerequisites
+- Java 11 (required for JaffaL)
+- Perl rename utility (automatically included in conda environment)
+
+See [System Dependencies](docs/system_dependencies.md) for detailed installation instructions.
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/erenada/TYPHON.git
+cd TYPHON
+
+# Install Java 11 (if not already installed)
+sudo apt install openjdk-11-jre  # Ubuntu/Debian
+
+# Create conda environment (includes rename utility)
+conda env create -f environment.yml
+conda activate typhon_env
+
+# Install the package in development mode (coming soon)
+# pip install -e .
+```
 
 ## Usage
 

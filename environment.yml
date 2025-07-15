@@ -28,6 +28,7 @@ dependencies:
   - r-seqinr
   - r-pafr
   - seqtk
+  - rename
   - pyyaml
   - pandas
   - openpyxl 
