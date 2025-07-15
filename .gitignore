@@ -1,0 +1,190 @@
+# Typhon Pipeline .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Testing
+.tox/
+.nox/
+.coverage
+.pytest_cache/
+htmlcov/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/_build/
+docs/.doctrees/
+.sphinx/
+
+# Packaging
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+temp/
+tmp/
+logs/
+
+# Conda and pip
+.conda-env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# R
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Bioinformatics data files (large files)
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.sam
+*.bam
+*.bai
+*.cram
+*.crai
+*.bed
+*.bedgraph
+*.bigwig
+*.bw
+*.bigbed
+*.bb
+*.vcf
+*.vcf.gz
+*.bcf
+*.gff
+*.gff3
+*.gtf
+*.fa
+*.fasta
+*.fna
+*.fa.gz
+*.fasta.gz
+*.fna.gz
+*.2bit
+*.maf
+*.paf
+*.tsv
+*.csv
+*.xlsx
+*.xls
+
+# Reference files and databases
+reference/
+references/
+databases/
+db/
+genome/
+genomes/
+annotation/
+annotations/
+
+# Output directories (but keep structure)
+results/
+output/
+outputs/
+data/raw/
+data/processed/
+analysis/
+tmp_*
+temp_*
+
+# Compiled binaries
+bin/*
+!bin/.gitkeep
+*.exe
+*.dll
+
+# Configuration files with sensitive data
+config.yaml
+config.json
+secrets.yaml
+.env.local
+
+# Archive and backup files
+*.backup
+*.bak
+archive/
+backup/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+*.orig
+
+# Nextflow and Snakemake
+.nextflow/
+.nextflow.log*
+work/
+.snakemake/
+
+# Docker
+.dockerignore
+
+# Keep important empty directories
+!examples/data/.gitkeep
+!tests/data/.gitkeep
+!bin/.gitkeep 
