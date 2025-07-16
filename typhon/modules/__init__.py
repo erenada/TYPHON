@@ -8,5 +8,9 @@ This package contains the main pipeline step modules:
 - postprocess: Post-processing utilities
 """
 
-# Import will be added as we create the modules
-__all__ = [] 
+# Import modules as they are created
+from .run_genion import run_genion, get_genion_bin
+from .run_longgf import run_longgf
+from .postprocess import postprocess
+
+__all__ = ['run_genion', 'get_genion_bin', 'run_longgf', 'postprocess'] 

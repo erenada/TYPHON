@@ -66,13 +66,69 @@ python setup_genion.py
 
 ## Usage
 
-*Coming soon - pipeline is under development*
+### Main Pipeline Script
 
-The pipeline will support:
-- Long-read RNA sequencing data (FASTQ format)
-- Multiple reference types (Gencode, Ensembl)
-- Comprehensive chimeric RNA detection using three complementary tools
-- Automated reference preparation and processing
+The pipeline now includes a unified main script with YAML configuration support:
+
+```bash
+# Generate a configuration template
+python typhon_main.py --generate-config > my_config.yaml
+
+# Edit the configuration file with your paths and settings
+# See examples/mouse_config.yaml for a working example
+
+# Run the pipeline with dry-run to see what would be executed
+python typhon_main.py --config my_config.yaml --dry-run
+
+# Run the full pipeline
+python typhon_main.py --config my_config.yaml
+
+# Run specific modules only
+python typhon_main.py --config my_config.yaml --modules longgf
+
+# Override configuration settings
+python typhon_main.py --config my_config.yaml --threads 30 --output /custom/path
+```
+
+### Configuration File Format
+
+The pipeline uses YAML configuration files for easy parameter management:
+
+```yaml
+project:
+  name: "My_RNA_Fusion_Analysis"
+  output_dir: "/path/to/output"
+  threads: 20
+
+input:
+  fastq_dir: "/path/to/fastq/files"
+
+references:
+  genome: "/path/to/genome.fa"
+  gtf: "/path/to/annotation.gtf"
+  transcriptome: "/path/to/transcripts.fa"
+
+modules:
+  longgf:
+    enabled: true
+    keep_intermediate: false
+  genion:
+    enabled: true
+    min_support: 1
+  jaffal:
+    enabled: false
+
+options:
+  cleanup_intermediate: true
+  debug: false
+```
+
+### Current Status
+
+- **LongGF Integration**: Fully implemented and tested with production data
+- **Genion Integration**: Module structure complete, reference preparation in progress
+- **JaffaL Integration**: Planned for future implementation
+- **Configuration System**: YAML-based configuration with validation and template generation
 
 ## Contributing
 
