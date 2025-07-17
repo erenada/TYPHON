@@ -5,12 +5,12 @@ project:
   author: "Eren Ada, PhD"
 
 input:
-  fastq_dir: "../typhon_old/FASTQ"
+  fastq_dir: "test_data/FASTQ"
 
 references:
-  genome: "../typhon_old/REFERENCES/GRCm39.primary_assembly.genome.fa"
-  gtf: "../typhon_old/REFERENCES/gencode.vM28.annotation.gtf"
-  transcriptome: "../typhon_old/REFERENCES/gencode.vM28.transcripts.fa"
+  genome: "test_data/REFERENCES/GRCm39.primary_assembly.genome.fa"
+  gtf: "test_data/REFERENCES/gencode.vM28.annotation.gtf"
+  transcriptome: "test_data/REFERENCES/gencode.vM28.transcripts.fa"
 
 modules:
   longgf:

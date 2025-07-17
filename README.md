@@ -71,23 +71,23 @@ python setup_genion.py
 The pipeline now includes a unified main script with YAML configuration support:
 
 ```bash
-# Generate a configuration template
-python typhon_main.py --generate-config > my_config.yaml
-
-# Edit the configuration file with your paths and settings
-# See examples/mouse_config.yaml for a working example
+# Edit the provided configuration file with your paths and settings
+# examples/mouse_config.yaml is provided as a template
 
 # Run the pipeline with dry-run to see what would be executed
-python typhon_main.py --config my_config.yaml --dry-run
+python typhon_main.py --dry-run
 
 # Run the full pipeline
-python typhon_main.py --config my_config.yaml
+python typhon_main.py
 
 # Run specific modules only
-python typhon_main.py --config my_config.yaml --modules longgf
+python typhon_main.py --modules longgf
+
+# Use a custom configuration file
+python typhon_main.py --config my_custom_config.yaml
 
 # Override configuration settings
-python typhon_main.py --config my_config.yaml --threads 30 --output /custom/path
+python typhon_main.py --threads 30 --output /custom/path
 ```
 
 ### Configuration File Format
@@ -126,9 +126,9 @@ options:
 ### Current Status
 
 - **LongGF Integration**: Fully implemented and tested with production data
-- **Genion Integration**: Module structure complete, reference preparation in progress
+- **Genion Integration**: Fully implemented and tested - produces identical results to original pipeline
 - **JaffaL Integration**: Planned for future implementation
-- **Configuration System**: YAML-based configuration with validation and template generation
+- **Configuration System**: YAML-based configuration with validation and example templates
 
 ## Contributing
 

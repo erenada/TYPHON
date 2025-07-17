@@ -13,24 +13,36 @@ def prepare_genion_reference_files(gtf, transcriptome_fasta, output_dir, threads
             log(msg)
         else:
             print(msg)
-    # 1. GTF conversion if needed
+    # 1. GTF conversion - match old pipeline exactly
     if reference_type == 'gencode':
         gtf_mod1 = os.path.join(output_dir, 'Genion_modified_gtf_file_1.gtf')
         gtf_mod2 = os.path.join(output_dir, 'Genion_modified_gtf_file_2.gtf')
         gtf_final = os.path.join(output_dir, 'Genion_modified_gtf_final.gtf')
-        if not os.path.exists(gtf_mod2):
-            _log('Converting Gencode GTF to Genion-compatible format (utility)...')
-            sed1 = f"sed -E 's/gene_id \"(ENS(MUS)?[GTE][0-9]+)\\.([0-9]+)\";/gene_id \"\\1\"; gene_version \"\\3\";/' {gtf} > {gtf_mod1}"
-            sed2 = f"sed -E 's/transcript_id \"(ENS(MUS)?[GTE][0-9]+)\\.([0-9]+)\";/transcript_id \"\\1\"; transcript_version \"\\3\";/' {gtf_mod1} > {gtf_mod2}"
-            sed3 = f"sed -E 's/exon_id \"(ENS(MUS)?[GTE][0-9]+)\\.([0-9]+)\";/exon_id \"\\1\"; exon_version \"\\3\";/' {gtf_mod2} > {gtf_final}"
-            sed4 = f"sed 's/^chrM/MT/;s/^chrX/X/;s/^chrY/Y/;s/^chr//' {gtf_final} > {gtf_mod1}"
-            gtftk_cmd = f"gtftk convert_ensembl -i {gtf_mod1} -o {gtf_mod2}"
-            subprocess.run(sed1, shell=True, check=True)
-            subprocess.run(sed2, shell=True, check=True)
-            subprocess.run(sed3, shell=True, check=True)
-            subprocess.run(sed4, shell=True, check=True)
+        
+        if not os.path.exists(gtf_final):
+            _log('Converting Gencode GTF to Genion-compatible format (matching old pipeline)...')
+            
+            # Step 1: Combined sed command for version extraction (matches old pipeline)
+            ID = "(ENS(MUS)?[GTE][0-9]+)\\.([0-9]+)"
+            sed1_cmd = f"""cat {gtf} | sed -E 's/gene_id "{ID}";/gene_id "\\1"; gene_version "\\3";/' | sed -E 's/transcript_id "{ID}";/transcript_id "\\1"; transcript_version "\\3";/' | sed -E 's/exon_id "{ID}";/exon_id "\\1"; exon_version "\\3";/' > {gtf_mod1}"""
+            
+            # Step 2: Chromosome name cleanup (matches old pipeline)
+            sed2_cmd = f"sed 's/^chrM/MT/;s/^chrX/X/;s/^chrY/Y/;s/^chr//' {gtf_mod1} > {gtf_mod2}"
+            
+            # Step 3: gtftk convert_ensembl (matches old pipeline)
+            gtftk_cmd = f"gtftk convert_ensembl -i {gtf_mod2} -o {gtf_final}"
+            
+            subprocess.run(sed1_cmd, shell=True, check=True)
+            subprocess.run(sed2_cmd, shell=True, check=True)
             subprocess.run(gtftk_cmd, shell=True, check=True)
-        gtf_for_genion = gtf_mod2
+            
+            # Clean up intermediate files (matches old pipeline)
+            if os.path.exists(gtf_mod1):
+                os.remove(gtf_mod1)
+            if os.path.exists(gtf_mod2):
+                os.remove(gtf_mod2)
+        
+        gtf_for_genion = gtf_final
     elif reference_type == 'ensembl':
         _log('Using Ensembl GTF as-is (utility).')
         gtf_for_genion = gtf

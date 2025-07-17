@@ -79,50 +79,6 @@ def validate_config(config):
     return True
 
 
-def generate_config_template():
-    """Generate a template YAML configuration file."""
-    template = {
-        'project': {
-            'name': 'My_RNA_Fusion_Analysis',
-            'output_dir': '/path/to/output/directory',
-            'threads': 20,
-            'author': 'Your Name'
-        },
-        'input': {
-            'fastq_dir': '/path/to/fastq/files'
-        },
-        'references': {
-            'genome': '/path/to/genome.fa',
-            'gtf': '/path/to/annotation.gtf',
-            'transcriptome': '/path/to/transcripts.fa'
-        },
-        'modules': {
-            'longgf': {
-                'enabled': True,
-                'keep_intermediate': False,
-                'min_support': 100,
-                'gap_threshold': 50,
-                'junction_threshold': 100
-            },
-            'genion': {
-                'enabled': True,
-                'min_support': 1,
-                'keep_debug': True
-            },
-            'jaffal': {
-                'enabled': False,
-                'jaffal_dir': '/path/to/jaffal/installation'
-            }
-        },
-        'options': {
-            'cleanup_intermediate': True,
-            'debug': False,
-            'keep_sam_files': True
-        }
-    }
-    
-    return yaml.dump(template, default_flow_style=False, sort_keys=False)
-
 
 def run_longgf_step(config):
     """Execute LongGF module."""
@@ -206,24 +162,22 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run with configuration file
-  python typhon_main.py --config config.yaml
+  # Run with default configuration file (config.yaml)
+  python typhon_main.py
 
-  # Generate configuration template
-  python typhon_main.py --generate-config > my_config.yaml
+  # Run with custom configuration file
+  python typhon_main.py --config my_config.yaml
 
   # Run with config and override threads
-  python typhon_main.py --config config.yaml --threads 30
+  python typhon_main.py --threads 30
 
   # Run only LongGF module
-  python typhon_main.py --config config.yaml --modules longgf
+  python typhon_main.py --modules longgf
         """
     )
     
-    parser.add_argument('--config', '-c',
-                        help='YAML configuration file')
-    parser.add_argument('--generate-config', action='store_true',
-                        help='Generate template configuration file and exit')
+    parser.add_argument('--config', '-c', default='config.yaml',
+                        help='YAML configuration file (default: config.yaml)')
     parser.add_argument('--threads', '-t', type=int,
                         help='Number of threads (overrides config)')
     parser.add_argument('--output', '-o',
@@ -238,14 +192,9 @@ Examples:
     
     args = parser.parse_args()
     
-    # Generate config template if requested
-    if args.generate_config:
-        print(generate_config_template())
-        sys.exit(0)
-    
-    # Check if config is required
-    if not args.config:
-        parser.error("--config is required unless using --generate-config")
+    # Check if config file exists
+    if not os.path.exists(args.config):
+        parser.error(f"Configuration file '{args.config}' not found. Please ensure it exists or specify a different path with --config.")
     
     # Load configuration
     config = load_config(args.config)
