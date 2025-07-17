@@ -2,6 +2,10 @@
 
 This directory will contain comprehensive documentation for the Typhon pipeline.
 
+## Available Documentation
+
+- `genion_integration_improvements.md` - Comprehensive documentation of Genion integration testing improvements and lessons learned
+
 ## Planned Documentation
 
 - `installation.md` - Installation guide and requirements
@@ -13,4 +17,4 @@ This directory will contain comprehensive documentation for the Typhon pipeline.
 
 ## Current Status
 
-Documentation is being developed as part of the pipeline refactoring process. 
+Documentation is being developed as part of the pipeline refactoring process. The Genion integration improvements document serves as a template for future detailed documentation. 

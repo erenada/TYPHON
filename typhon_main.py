@@ -109,26 +109,64 @@ def run_genion_step(config, sam_files):
     logging.info("Starting Genion analysis...")
     
     genion_config = config.get('modules', {}).get('genion', {})
+    references = config.get('references', {})
+    project = config.get('project', {})
     
     try:
-        # TODO: Need to prepare Genion reference files (selfalign_paf, selfalign_tsv)
-        # This will be implemented when we integrate the genion_reference.py utilities
+        from typhon.utils.genion_reference import prepare_genion_reference_files
+        from typhon.modules.run_genion import run_genion
         
-        logging.warning("Genion integration not fully implemented yet")
-        logging.info("Required for full Genion integration:")
-        logging.info("  - Self-alignment PAF generation")
-        logging.info("  - GTF conversion for Genion format")
-        logging.info("  - Genomic superduplicates file")
+        # Prepare Genion reference files
+        genion_ref_dir = os.path.join(project['output_dir'], 'genion_references')
+        logging.info("Preparing Genion reference files...")
         
-        # Placeholder implementation
+        gtf_for_genion, selfalign_paf, selfalign_tsv = prepare_genion_reference_files(
+            gtf=references['gtf'],
+            transcriptome_fasta=references['transcriptome'],
+            output_dir=genion_ref_dir,
+            threads=project.get('threads', 1),
+            reference_type='gencode'
+        )
+        
+        # Process each SAM file with Genion
+        genion_output_dir = os.path.join(project['output_dir'], 'genion_results')
         results = []
+        
         for sam_file in sam_files:
             sample_name = Path(sam_file).stem
-            logging.info(f"Would process {sample_name} with Genion")
-            # TODO: Implement actual Genion execution
-            results.append(f"genion_result_{sample_name}.tsv")
-        
-        logging.info(f"Genion step completed (placeholder) for {len(results)} samples")
+            
+            # Determine corresponding FASTQ file
+            fastq_dir = config['input']['fastq_dir']
+            fastq_file = None
+            for ext in ['.fastq', '.fq', '.fastq.gz', '.fq.gz']:
+                potential_fastq = os.path.join(fastq_dir, f"{sample_name}{ext}")
+                if os.path.exists(potential_fastq):
+                    fastq_file = potential_fastq
+                    break
+            
+            if not fastq_file:
+                logging.error(f"No FASTQ file found for sample {sample_name}")
+                continue
+                
+            logging.info(f"Processing {sample_name} with Genion...")
+            
+            run_genion(
+                input_fastq=fastq_file,
+                input_sam=sam_file,
+                gtf_for_genion=gtf_for_genion,
+                selfalign_paf=selfalign_paf,
+                selfalign_tsv=selfalign_tsv,
+                output_dir=genion_output_dir,
+                threads=1,  # Genion doesn't use multiple threads effectively
+                keep_intermediate=genion_config.get('keep_debug', True),
+                log_path=os.path.join(genion_output_dir, 'run_genion.log')
+            )
+            
+            result_file = os.path.join(genion_output_dir, f'{sample_name}_genion.tsv')
+            if os.path.exists(result_file):
+                results.append(result_file)
+                
+        logging.info(f"Genion analysis completed for {len(results)} samples")
         return results
         
     except Exception as e:
@@ -268,6 +306,16 @@ Examples:
                 # Look for existing SAM files if LongGF wasn't run
                 output_dir = config['project']['output_dir']
                 sam_files = list(Path(output_dir).glob("*.sam"))
+                
+                # Also check common LongGF output locations
+                if not sam_files:
+                    for location in ['test_output_longgf', 'longgf_results', f"{output_dir}/longgf_results"]:
+                        if os.path.exists(location):
+                            sam_files = list(Path(location).glob("*.sam"))
+                            if sam_files:
+                                logging.info(f"Found existing SAM files in {location}")
+                                break
+                
                 if not sam_files:
                     logging.error("No SAM files found for Genion. Run LongGF first or provide SAM files.")
                     sys.exit(1)
