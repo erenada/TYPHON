@@ -187,4 +187,4 @@ work/
 # Keep important empty directories
 !examples/data/.gitkeep
 !tests/data/.gitkeep
-!bin/.gitkeep 
+!bin/.gitkeep jaffal/

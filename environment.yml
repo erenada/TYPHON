@@ -32,4 +32,13 @@ dependencies:
   - rename
   - pyyaml
   - pandas
-  - openpyxl 
+  - openpyxl
+  - openjdk=11     # Java 11 for JaffaL compatibility
+  - bowtie2        # For building JaffaL indices
+  # JaffaL dependencies - significantly reduces setup time
+  - trimmomatic    # Read trimming tool
+  - velvet         # Includes velveth and velvetg
+  - oases          # Transcriptome assembler (depends on velvet)
+  - blat           # Sequence alignment tool
+  - bpipe          # Build system used by JaffaL
+  - bbmap          # Includes dedupe, reformat, and other tools 

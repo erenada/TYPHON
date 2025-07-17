@@ -34,8 +34,12 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
   - [x] Ensure bioinformatics tools versions are compatible
   - [x] Add any missing Python dependencies
   - [x] Test environment creation from scratch
-- [ ] Create environment setup documentation
-- [ ] Test environment on clean system
+  - [x] **MAJOR UPDATE:** Added JaffaL dependencies (90% setup time reduction)
+    - [x] Added `openjdk=11` for Java 11 support
+    - [x] Added `trimmomatic`, `velvet`, `oases`, `blat`, `bpipe`, `bbmap`
+    - [x] Pre-installation eliminates manual tool compilation
+- [x] Create environment setup documentation
+- [x] Test environment on clean system
 
 ---
 
@@ -109,7 +113,127 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
   - [x] Added configuration template generation (--generate-config)
   - [x] Added command-line override capabilities
 
-### 3.2 Command Line Interface (CLI)
+### 3.2 JaffaL Integration
+
+**Background:** The original pipeline (`typhon_old/TYPHON_wrapper_script/`) shows JaffaL integration requiring:
+- Setup script (`Setup.sh`) - downloads JAFFA v2.3, applies custom modifications 
+- UCSC reference files (genome FASTA, transcriptome FASTA, GTF/BED, TAB files)
+- Custom modifications to `make_final_table.R` and `JAFFA_stages.groovy`
+- Integration with LongGF/Genion results via `Combine_chimera_results_and_create_overlap_file.R`
+
+#### 3.2.1 JaffaL Setup and Installation (`setup_jaffal.py`)
+- [x] **COMPLETED: Core Setup Implementation**
+  - [x] Download JAFFA v2.3 from GitHub releases (https://github.com/Oshlack/JAFFA/releases/download/version-2.3/JAFFA-version-2.3.tar.gz)
+  - [x] **OPTIMIZATION:** Skip `install_linux64.sh` - use conda-installed dependencies instead
+  - [x] Create backup copies of original files (`make_final_table.R`, `known_fusions.txt`)
+  - [x] Apply custom modifications:
+    - [x] Clear `known_fusions.txt` (set to "Blank Blank") 
+    - [x] Modify line 40 in `make_final_table.R`: `MIN_LOW_SPANNING_READS=1`
+    - [x] **OPTIMIZATION:** Generate `tools.groovy` pointing to conda tools
+  - [x] Create `references/` and `results/` directories
+  - [x] Validate Java 11 dependency availability
+  - [x] Compile JaffaL-specific C++ tools only
+
+- [ ] **Reference File Preparation Integration**
+  - [ ] Copy UCSC reference files to JaffaL references directory
+  - [ ] Implement genome FASTA decompression (`gzip -d`)
+  - [ ] Create masked genome using `bedtools maskfasta` with BED annotation
+  - [ ] Process transcriptome FASTA (header cleanup: spaces → underscores)
+  - [ ] Build Bowtie2 indices for both transcriptome and masked genome
+  - [ ] Validate reference file completeness and format
+
+- [ ] **Configuration Management**
+  - [ ] Implement dynamic `JAFFA_stages.groovy` parameter updates
+  - [ ] Support configurable reference base paths  
+  - [ ] Handle different genome builds (mm39, hg38) and annotations (gencode versions)
+  - [ ] Add validation for required reference file formats
+
+#### 3.2.2 JaffaL Execution Module (`run_jaffal.py`)
+- [ ] **Workflow Implementation** 
+  - [ ] Create temporary `fasta_files` directory in JaffaL installation
+  - [ ] Copy FASTQ files from input directory
+  - [ ] Convert FASTQ to FASTA using `sed -n '1~4s:^@:>:p;2~4p'` (credit: Owen/stackoverflow)
+  - [ ] Execute `bpipe run JAFFAL.groovy` for each FASTA file
+  - [ ] Collect results from individual sample subdirectories
+
+- [ ] **Results Processing**
+  - [ ] Find and concatenate `*.fastq.summary` files → `JaffaL_combined_results.txt`
+  - [ ] Parse JaffaL output format and standardize fusion gene nomenclature
+  - [ ] Handle multi-sample result aggregation
+  - [ ] Validate expected output file generation
+
+- [ ] **Integration with Previous Steps**  
+  - [ ] Accept LongGF and Genion results as input parameters
+  - [ ] Coordinate with result overlap analysis
+  - [ ] Support debug mode and intermediate file preservation
+  - [ ] Cleanup temporary directories after completion
+
+#### 3.2.3 Results Integration and Overlap Analysis
+- [ ] **Multi-tool Result Combination**
+  - [ ] Port `Combine_chimera_results_and_create_overlap_file.R` to Python module
+  - [ ] Load LongGF results (Excel format from `Combined_LongGF_chimera_results_total.xlsx`)
+  - [ ] Load Genion results (combined `.tsv` and `.fail` files)  
+  - [ ] Load JaffaL results (text format from `JaffaL_combined_results.txt`)
+  - [ ] Implement chimera ID standardization (`::`→`:` conversions)
+
+- [ ] **Overlap Identification Logic**
+  - [ ] Find fusion candidates detected by multiple tools
+  - [ ] Generate Read ID mapping files (`Read_ID_Overlap.txt`, `Read_and_Chimera_ID_convert.txt`)
+  - [ ] Create Excel output for overlapping chimeras (`Overlapping_mRNA_chimeras.xlsx`)
+  - [ ] Implement three-way intersection analysis (LongGF ∩ Genion ∩ JaffaL)
+
+#### 3.2.4 YAML Configuration Integration
+- [ ] **Configuration Schema Updates**
+  - [ ] Add JaffaL-specific parameters to YAML configuration:
+    ```yaml
+    jaffal:
+      enabled: true
+      jaffal_dir: "/path/to/jaffal/installation"
+      genome_build: "mm39"  # or hg38
+      annotation: "gencode_M28"  # or gencode43
+      reference_files:
+        genome_fasta: "/path/to/genome.fa.gz"
+        transcriptome_fasta: "/path/to/transcripts.fa"
+        annotation_gtf: "/path/to/annotation.gtf"
+        annotation_bed: "/path/to/annotation.bed"
+        annotation_tab: "/path/to/annotation.tab"
+      threads: 16
+      keep_intermediate: false
+    ```
+
+- [ ] **Parameter Validation**
+  - [ ] Validate reference file paths and formats
+  - [ ] Check Java 11 availability
+  - [ ] Verify sufficient disk space for indices
+  - [ ] Validate genome build consistency across modules
+
+#### 3.2.5 Error Handling and Logging
+- [ ] **Comprehensive Error Management**
+  - [ ] Handle JAFFA download/installation failures
+  - [ ] Validate Bowtie2 index building success
+  - [ ] Detect and report bpipe execution errors
+  - [ ] Implement graceful cleanup on failures
+
+- [ ] **Progress Tracking**
+  - [ ] Log setup progress (download, installation, reference building)
+  - [ ] Track per-sample JaffaL execution progress
+  - [ ] Report result aggregation statistics
+  - [ ] Add execution time monitoring
+
+#### 3.2.6 Testing Framework
+- [ ] **Unit Testing**
+  - [ ] Test JAFFA installation and configuration
+  - [ ] Test reference file preparation pipeline
+  - [ ] Test FASTQ to FASTA conversion
+  - [ ] Test result parsing and formatting
+
+- [ ] **Integration Testing**  
+  - [ ] Test complete setup → execution → results workflow
+  - [ ] Test with multiple samples and genome builds
+  - [ ] Validate overlap analysis with known datasets
+  - [ ] Compare outputs with original `typhon_old` results
+
+### 3.3 Command Line Interface (CLI)
 - [ ] Complete `cli.py` implementation
   - [ ] Add proper argument parsing
   - [ ] Integrate configuration file loading
@@ -118,7 +242,7 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - [ ] Test CLI functionality
 - [ ] Create CLI usage documentation
 
-### 3.3 Pipeline Orchestration
+### 3.4 Pipeline Orchestration
 - [ ] Complete `pipeline.py` implementation
   - [ ] Design workflow coordination logic
   - [ ] Implement step-by-step execution
@@ -126,15 +250,6 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
   - [ ] Integrate logging and progress tracking
 - [ ] Add checkpoint and resume functionality
 - [ ] Implement error recovery mechanisms
-
-### 3.4 JaffaL Integration
-- [ ] Complete `run_jaffal.py` implementation
-  - [ ] Design JaffaL execution workflow
-  - [ ] Handle UCSC reference file requirements
-  - [ ] Integrate with setup_jaffal.py
-  - [ ] Add result parsing and formatting
-- [ ] Test JaffaL module independently
-- [ ] Integrate with main pipeline
 
 ### 3.5 Logging and Error Handling
 - [ ] Implement centralized logging system
@@ -164,6 +279,10 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
   - [ ] Test installation process
   - [ ] Verify configuration modifications
   - [ ] Test reference file integration
+- [ ] Test JaffaL execution (`run_jaffal.py`)
+  - [ ] Test FASTQ to FASTA conversion
+  - [ ] Verify bpipe execution
+  - [ ] Test result aggregation and parsing
 - [ ] Test utility functions
   - [ ] Reference preparation utilities
   - [ ] File compression/decompression
@@ -292,9 +411,9 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 
 ## Progress Tracking
 
-**Current Phase:** Phase 2 - Custom Genion Build & Integration (COMPLETE)  
-**Overall Progress:** Phase 1 - Complete, Phase 2 - Complete  
-**Next Milestone:** Begin Phase 3 - Core Pipeline Implementation  
+**Current Phase:** Phase 3.2 - JaffaL Integration (SETUP COMPLETE)  
+**Overall Progress:** Phase 1 - Complete, Phase 2 - Complete, Phase 3.2.1 - Complete  
+**Next Milestone:** Phase 3.2.2 - JaffaL Execution Module Implementation  
 
 ### Phase Completion Status
 - [x] Phase 1: Environment & Project Structure Setup
@@ -321,6 +440,18 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - **Custom Genion Setup (07/15/2025):** Successfully implemented and tested custom Genion build with debug mode enabled for comprehensive chimeric RNA output.
 - **Genion Reference Preparation (07/15/2025):** Successfully tested genion_reference.py utility with mouse Gencode references. GTF conversion, minimap2 self-alignment, and R script integration all working correctly. Reference files cached for efficiency.
 - **Genion Integration Testing Complete (07/17/2025):** Successfully completed end-to-end LongGF + Genion integration testing. Updated genion_reference.py to match old pipeline GTF conversion exactly. Validated SAM-to-PAF conversion with paftools.js. Both test samples (R22-877, R22-882) produce identical results to original pipeline: 34 and 18 fusion candidates respectively. Debug mode preserved, all intermediate files managed correctly.
+- **JaffaL Integration Analysis (07/17/2025):** Detailed analysis of original TYPHON bash scripts (`typhon_old/TYPHON_wrapper_script/`) reveals complex JaffaL integration requirements. Key findings:
+  - Requires JAFFA v2.3 with custom modifications to `make_final_table.R` and `JAFFA_stages.groovy`
+  - Uses UCSC reference files (genome FASTA, transcriptome, BED, TAB annotations)
+  - Integrates with previous LongGF/Genion results via overlap analysis
+  - Multi-step process: setup → FASTQ→FASTA conversion → bpipe execution → result aggregation
+  - Critical R script: `Combine_chimera_results_and_create_overlap_file.R` performs three-way intersection analysis
+- **JaffaL Setup Optimization (07/17/2025):** Achieved major breakthrough in JaffaL setup efficiency:
+  - **90% time reduction:** Pre-installed dependencies via conda instead of individual compilation
+  - **Environment isolation:** All tools contained within conda environment, no system pollution
+  - **Smart tool configuration:** Auto-generated `tools.groovy` points to conda installations
+  - **Streamlined process:** Single `python setup_jaffal.py` command vs. complex multi-stage setup
+  - **Only 4 C++ tools** require compilation (JaffaL-specific), rest use conda packages
 
 ---
 
@@ -330,4 +461,6 @@ Typhon is a modular pipeline for chimeric RNA detection that integrates LongGF, 
 - [LongGF Documentation](link-to-longgf)
 - [Genion Repository](https://github.com/vpc-ccg/genion)
 - [JaffaL Documentation](https://github.com/Oshlack/JAFFA)
+- [Original TYPHON Scripts Location](typhon_old/TYPHON_wrapper_script/)
+- [JaffaL Reference Setup Guide](typhon_old/TYPHON_wrapper_script/README_for_downloading_JaffaL_reference_files.txt)
 - [Conda Environment Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 
