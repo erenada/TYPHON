@@ -1,0 +1,50 @@
+Creative Commons Attribution-NonCommercial 4.0 International License
+
+Copyright (c) 2025 Eren Ada, PhD
+
+This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
+
+You are free to:
+  * Share — copy and redistribute the material in any medium or format
+  * Adapt — remix, transform, and build upon the material
+
+Under the following terms:
+  * Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+  * NonCommercial — You may not use the material for commercial purposes.
+
+No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+Notices:
+You do not have to comply with the license for elements of the material in the public domain or where your use is permitted by an applicable exception or limitation.
+
+No warranties are given. The license may not give you all of the permissions necessary for your intended use. For example, other rights such as publicity, privacy, or moral rights may limit how you use the material.
+
+Full license text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
+ACADEMIC AND RESEARCH USE ONLY
+Commercial use is prohibited.
+
+================================================================================
+
+INTEGRATED TOOLS AND DEPENDENCIES
+
+This pipeline integrates the following third-party tools, each under their respective licenses:
+
+LongGF:
+  - License: GPL-3.0
+  - Repository: https://github.com/WGLab/LongGF
+  - Citation: Liu, Q., et al. (2020). LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. BMC Genomics 21:793.
+
+Genion:
+  - License: MIT
+  - Repository: https://github.com/vpc-ccg/genion
+  - Citation: Karaoglanoglu, F., et al. (2022). Genion, an accurate tool to detect gene fusion from long transcriptomics reads. BMC Genomics 23:129.
+
+JAFFA/JaffaL:
+  - License: GPL-3.0
+  - Repository: https://github.com/Oshlack/JAFFA
+  - Citations: 
+    * Davidson, N.M., et al. (2015). JAFFA: High sensitivity transcriptome-focused fusion gene detection. Genome Medicine 7:43.
+    * Davidson, N.M., et al. (2022). JAFFAL: detecting fusion genes with long-read transcriptome sequencing. Genome Biology 23:10.
+
+Additional bioinformatics tools and dependencies are used under their respective open-source licenses as specified in the conda environment file (environment.yml). 

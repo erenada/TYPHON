@@ -60,6 +60,11 @@ conda activate typhon_env
 # Build custom Genion with debug mode enabled
 python setup_genion.py
 
+# Setup JaffaL (optional - only if you plan to use JaffaL module)
+# IMPORTANT: Configure the 'jaffal' section in config.yaml first with your reference file paths
+# See examples/mouse_config.yaml for a template
+python setup_jaffal.py --debug  # --debug provides detailed logging (optional)
+
 # Verify installation
 ./bin/genion --version  # Should show: 1.2.3-dirty
 ```
@@ -123,12 +128,42 @@ options:
   debug: false
 ```
 
+### JaffaL Setup (Optional)
+
+If you plan to use the JaffaL module for fusion detection:
+
+1. **Configure reference files** in your config.yaml:
+   ```yaml
+   modules:
+     jaffal:
+       enabled: true
+       jaffal_dir: ./jaffal/JAFFA-version-2.3
+       genome_build: mm39  # or hg38
+       annotation: gencode_M28  # or gencode43
+       reference_files:
+         genome_fasta_gz: /path/to/genome.fa.gz
+         transcriptome_fasta: /path/to/transcripts.fasta
+         annotation_bed: /path/to/annotation.bed
+         annotation_tab: /path/to/annotation.tab
+   ```
+
+2. **Run the JaffaL setup script**:
+   ```bash
+   python setup_jaffal.py --debug  # --debug for detailed logging
+   ```
+
+The setup script will:
+- Download and install JaffaL (JAFFA-version-2.3)
+- Configure it for your specified genome build (mouse/human)
+- Process reference files and build Bowtie2 indices
+- Apply TYPHON-specific modifications
+
 ### Current Status
 
-- **LongGF Integration**: Fully implemented and tested with production data
-- **Genion Integration**: Fully implemented and tested - produces identical results to original pipeline
-- **JaffaL Integration**: Planned for future implementation
-- **Configuration System**: YAML-based configuration with validation and example templates
+- **LongGF Integration**: ✅ Fully implemented and tested with production data
+- **Genion Integration**: ✅ Fully implemented and tested - produces identical results to original pipeline
+- **JaffaL Integration**: 🚧 Setup script implemented, execution module in progress
+- **Configuration System**: ✅ YAML-based configuration with validation and example templates
 
 ## Contributing
 
@@ -136,4 +171,22 @@ options:
 
 ## License
 
-*To be determined* 
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the [LICENSE](LICENSE) file for details.
+
+**Academic and Research Use Only** - Commercial use is prohibited.
+
+## Citation
+
+When using Typhon, please cite the original tools and the upcoming Typhon paper:
+
+### Typhon Pipeline
+- **Typhon**: Ada, E., & Kane, H. (2025). Typhon: Modular Pipeline for Chimeric RNA Detection. *[Citation will be provided upon publication]*
+
+### Integrated Tools
+- **LongGF**: Liu, Q., et al. (2020). LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. *BMC Genomics* 21:793. https://doi.org/10.1186/s12864-020-07207-4
+
+- **Genion**: Karaoglanoglu, F., et al. (2022). Genion, an accurate tool to detect gene fusion from long transcriptomics reads. *BMC Genomics* 23:129. https://doi.org/10.1186/s12864-022-08339-5
+
+- **JAFFA**: Davidson, N.M., et al. (2015). JAFFA: High sensitivity transcriptome-focused fusion gene detection. *Genome Medicine* 7:43. https://doi.org/10.1186/s13073-015-0167-x
+
+- **JAFFAL**: Davidson, N.M., et al. (2022). JAFFAL: detecting fusion genes with long-read transcriptome sequencing. *Genome Biology* 23:10. https://doi.org/10.1186/s13059-021-02588-5 
