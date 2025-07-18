@@ -184,6 +184,9 @@ work/
 # Docker
 .dockerignore
 
+# Development and internal documentation
+pipeline_dev_roadmap.md
+
 # Keep important empty directories
 !examples/data/.gitkeep
 !tests/data/.gitkeep
