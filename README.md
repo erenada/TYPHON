@@ -180,7 +180,7 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 When using Typhon, please cite the original tools and the upcoming Typhon paper:
 
 ### Typhon Pipeline
-- **Typhon**: Ada, E., & Kane, H. (2025). Typhon: Modular Pipeline for Chimeric RNA Detection. *[Citation will be provided upon publication]*
+- **Typhon**: Citation will be updated upon publication
 
 ### Integrated Tools
 - **LongGF**: Liu, Q., et al. (2020). LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. *BMC Genomics* 21:793. https://doi.org/10.1186/s12864-020-07207-4
