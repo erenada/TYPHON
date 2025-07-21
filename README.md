@@ -1,4 +1,4 @@
-# TYPHON: Research-Grade Chimeric RNA Detection Pipeline
+# Typhon: Modular Pipeline for Chimeric RNA Detection
 
 **Developers:** Harry Kane, PhD; Eren Ada, PhD  
 **Version:** 1.0.0  
