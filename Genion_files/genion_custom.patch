@@ -1,32 +1,103 @@
---- /tmp/genion_original/src/annotate.cpp	2025-07-15 17:05:09.997276001 -0400
-+++ Genion_files/annotate.cpp	2025-07-15 17:04:46.388476519 -0400
+--- /home/jackson_lab/Cursor/Container/Genion_files/Original_Genion_files/genion/src/annotate.cpp	2025-06-17 14:32:07.579282257 -0400
++++ /home/jackson_lab/Cursor/Container/Genion_files/annotate.cpp	2025-05-27 14:09:23.769544000 -0400
 @@ -1,4 +1,3 @@
 -
  #include <utility>
  
  #include <unordered_set>
-@@ -27,6 +26,7 @@
- #include <iostream>
+@@ -1034,7 +1033,7 @@
+             int maxrtdistance,      double maxrtfin,
+             bool only_coding){
  
- #include <cassert>
-+#include <filesystem>
+-        bool full_debug_output = false;
++        bool full_debug_output = true;
  
- using std::string;
- using std::ostream;
-@@ -1233,7 +1233,15 @@
+         std::unordered_map<string, gene> gene_annot = read_gene_annotation(gtf_path);
+         
+@@ -1168,61 +1167,39 @@
+                 }
              }
-         }
-        
+ 
+-/*
+-            std::map<string, vector<locus>> breakpoints;
 -
-+        logfile.close();
-+        outfile_fail.close();
-+        // Remove empty files if they exist and are empty
-+        if (std::filesystem::exists(log_path) && std::filesystem::file_size(log_path) == 0) {
-+            std::filesystem::remove(log_path);
-+        }
-+        if (std::filesystem::exists(output_path + ".fail") && std::filesystem::file_size(output_path + ".fail") == 0) {
-+            std::filesystem::remove(output_path + ".fail");
-+        }
-         return 0;  
-     }
-        
+-            bool is_forward = true;
+-            for(const auto &ff : {cand.second.forward, cand.second.backward, cand.second.no_first, cand.second.multi_first}){
+-                for(const auto &fus : ff){
+-                    for(const auto &bp_pair : fus.get_breakpoints(is_forward)){
+-                        breakpoints[bp_pair.first].push_back(bp_pair.second);
+-                    }
+-                }
+-                is_forward = false;
+-            }
+-
+-            std::map<string, std::pair<double, double>> breakpoint_ranges;
+-            std::map<string, string> chromosome_per_gene;
+-            for( const auto &bpp : breakpoints){
+-                chromosome_per_gene[bpp.first] = bpp.second[0].chr;
+-                breakpoint_ranges[bpp.first] = mean_and_std(bpp.second, [] (const locus &l) -> double {
+-                    return static_cast<double>(l.position);
+-                });
+-            }
+-            */
+             if(full_debug_output){ 
+-            //#FusionID(Ensembl) Forward-Support Backward-Support Multi-First-Exon No-First-Exon Genes-Overlap Segmental-Duplication-Count FusionName(Symbol) FiN-Score Pass-Fail-Status total-normal-count fusion-count normal-counts proper-normal-count proper-FiN-Score total-other-fusion-count other-fusion-counts ffigf-score proper-ffigf-score A B Anorm Bnorm 
+-                outfile << fusion_id << "\t" << cand.second.forward.size() << "\t"
+-                    << cand.second.backward.size()  << "\t"
+-                    << cand.second.multi_first.size() << "\t" << cand.second.no_first.size()
+-                    << "\t" <<  cand.second.gene_overlaps.size() 
+-                    << "\t" <<  cand.second.duplications.size()
+-                    << "\t" << cand.second.name << "\t" << fin_score
+-                    << "\t" <<  pass_fail_code
+-                    << "\t" << gene_count_sum << "\t" << total_count <<  "\t"  << gene_count_string << "\t"
+-                    << total_count_putative_full_length << "\t" << genes.size() * total_count_putative_full_length / ( gene_count_sum + 1)
+-                    << "\t" <<  total_idf << "\t" << idf_string << "\t" << tfidf_score << "\t" << tfidf_score_full_len
+-                    << "\t" << fg_count  << "\t" << lg_count << "\t"
+-                    << forward_rt_ex << "\t" << backward_rt_ex << "\t"
+-                    << pvalue << "\t" << corr_pvalue << "\t" << (null_rejected?"pPASS":"pFAIL") 
+-                    << "\t" << static_cast<double>(cand.second.invalid)/cand.second.total_count() << "\n";
++                // Collect all read_ids
++                std::vector<std::string> all_read_ids;
++                for(const auto& cr : cand.second.forward) all_read_ids.push_back(cr.read_id);
++                for(const auto& cr : cand.second.backward) all_read_ids.push_back(cr.read_id);
++                for(const auto& cr : cand.second.multi_first) all_read_ids.push_back(cr.read_id);
++                for(const auto& cr : cand.second.no_first) all_read_ids.push_back(cr.read_id);
++                // Output one line per read_id
++                for(const auto& read_id : all_read_ids) {
++                    outfile << fusion_id << "\t" << cand.second.forward.size() << "\t"
++                        << cand.second.backward.size()  << "\t"
++                        << cand.second.multi_first.size() << "\t" << cand.second.no_first.size()
++                        << "\t" <<  cand.second.gene_overlaps.size() 
++                        << "\t" <<  cand.second.duplications.size()
++                        << "\t" << cand.second.name << "\t" << fin_score
++                        << "\t" <<  pass_fail_code
++                        << "\t" << gene_count_sum << "\t" << total_count <<  "\t"  << gene_count_string << "\t"
++                        << total_count_putative_full_length << "\t" << genes.size() * total_count_putative_full_length / ( gene_count_sum + 1)
++                        << "\t" <<  total_idf << "\t" << idf_string << "\t" << tfidf_score << "\t" << tfidf_score_full_len
++                        << "\t" << fg_count  << "\t" << lg_count << "\t"
++                        << forward_rt_ex << "\t" << backward_rt_ex << "\t"
++                        << pvalue << "\t" << corr_pvalue << "\t" << (null_rejected?"pPASS":"pFAIL") 
++                        << "\t" << static_cast<double>(cand.second.invalid)/cand.second.total_count() 
++                        << "\t" << read_id << "\n";
++                }
+             }
+             else{
+                 if(pass_fail_code.find("PASS")!=string::npos){
+-/*
+-                    string pos_string;
+-                    for( const string &g: genes){
+-                        auto rang = breakpoint_ranges.at(g);
+-                        string ch = chromosome_per_gene.at(g);
+-                        pos_string += g + "(" + ch + ":" + std::to_string(rang.first) + "±" + std::to_string(rang.second) + ")";
+-                    }
+-
+-                    */
+                     std::stringstream range_stream;
+                     for(const auto &tup :cand.second.median_range()){
+                         range_stream << std::get<0>(tup) << ":" << std::get<1>(tup) << "-" << std::get<2>(tup) << ";";
+                     }
+-                    print_tsv(outfile, fusion_id, cand.second.name, tfidf_score_full_len, fin_score, total_count, gene_count_string, pass_fail_code, range_stream.str());// pos_string);
++                    print_tsv(outfile, fusion_id, cand.second.name, tfidf_score_full_len, fin_score, total_count, gene_count_string, pass_fail_code, range_stream.str());
+ 
+                     cand.second.log(logfile);
+                 }

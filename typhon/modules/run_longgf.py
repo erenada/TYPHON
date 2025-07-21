@@ -4,7 +4,7 @@ import gzip
 import shutil
 import tempfile
 from pathlib import Path
-from typhon.command_utils import run_command
+from typhon.command_utils import run_command, run_command_with_realtime_output
 
 
 def decompress_if_gzipped(input_path):
@@ -20,7 +20,11 @@ def decompress_if_gzipped(input_path):
         
         with gzip.open(input_path, 'rb') as f_in:
             with open(tmp.name, 'wb') as f_out:
-                f_out.write(f_in.read())
+                data = f_in.read()
+                if isinstance(data, bytes):
+                    f_out.write(data)
+                else:
+                    f_out.write(data.encode())
         return tmp.name
     return input_path
 
@@ -40,12 +44,14 @@ def postprocess(output_dir):
         subprocess.run(["Rscript", str(r_script_path), output_dir], check=True)
 
 
-def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=False, log_path=None):
+def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=False, log_path=None, 
+               min_overlap_len=100, bin_size=50, min_map_len=100, pseudogene=2, 
+               secondary_alignment=0, min_sup_read=1, output_flag=0):
     """
     Run LongGF pipeline step:
     - Aligns each FASTQ with minimap2
     - Converts SAM to BAM and sorts
-    - Runs LongGF
+    - Runs LongGF with configurable parameters
     - Post-processes LongGF logs
     - Further processes results and writes Excel files
     
@@ -57,6 +63,13 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
         threads: Number of threads to use (default: 1)
         keep_intermediate: Whether to keep intermediate files (default: False)
         log_path: Path to log file (optional)
+        min_overlap_len: Minimum overlap length for fusion detection (default: 100)
+        bin_size: Bin size for genomic intervals (default: 50)
+        min_map_len: Minimum mapping length (default: 100)
+        pseudogene: Pseudogene filter setting (default: 2)
+        secondary_alignment: Include secondary alignments, 0=no, 1=yes (default: 0)
+        min_sup_read: Minimum supporting reads (default: 1)
+        output_flag: Output format flag (default: 0)
     
     Returns:
         dict: Results summary with file paths and statistics
@@ -106,7 +119,7 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
                 cmd = f"gzip -dc {input_fastq} | minimap2 -ax splice -uf -k14 --secondary=no -G 50k -t {threads} {genome_path} - -o {output_unsorted_sam}"
             else:
                 cmd = f"minimap2 -ax splice -uf -k14 --secondary=no -G 50k -t {threads} {genome_path} {input_fastq} -o {output_unsorted_sam}"
-            run_command(cmd)
+            run_command_with_realtime_output(cmd)
             
             # 2. Convert SAM to BAM
             log("Converting SAM to BAM...")
@@ -116,9 +129,10 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
             log("Sorting BAM by name...")
             run_command(f"samtools sort -n -@ {threads} {output_unsorted_bam} -o {output_sorted_bam}")
             
-            # 4. Run LongGF
+            # 4. Run LongGF with configurable parameters
             log("Running LongGF...")
-            run_command(f"LongGF {output_sorted_bam} {gtf_path} 100 50 100 2 0 1 0 > {output_longgf_total}")
+            longgf_cmd = f"LongGF {output_sorted_bam} {gtf_path} {min_overlap_len} {bin_size} {min_map_len} {pseudogene} {secondary_alignment} {min_sup_read} {output_flag} > {output_longgf_total}"
+            run_command(longgf_cmd)
             
             processed_samples.append({
                 'sample': filename,

@@ -1,0 +1,100 @@
+# TYPHON Pipeline Configuration Template
+# Author: Eren Ada, PhD
+# 
+# This template uses relative paths for portability across different systems.
+# The pipeline automatically converts relative paths to absolute paths at runtime.
+
+# =============================================================================
+# PROJECT SETTINGS
+# =============================================================================
+project:
+  name: TYPHON_Test_Analysis                    # Analysis name for output labeling
+  output_dir: ./test_output_pipeline            # Main output directory for all results
+  threads: 20                                   # Default threads for parallel processing
+  author: Eren Ada, PhD                         # Author name for documentation
+
+# =============================================================================
+# INPUT DATA PATHS
+# =============================================================================
+input:
+  fastq_dir: ./test_data/FASTQ                  # Directory containing FASTQ files (.fastq, .fq, .gz supported)
+
+# =============================================================================
+# REFERENCE FILES
+# =============================================================================
+references:
+  genome: ./test_data/REFERENCES/GRCm39.primary_assembly.genome.fa     # Reference genome FASTA
+  gtf: ./test_data/REFERENCES/gencode.vM28.annotation.gtf              # Gene annotation GTF file
+  transcriptome: ./test_data/REFERENCES/gencode.vM28.transcripts.fa    # Transcriptome FASTA for Genion
+
+# =============================================================================
+# PIPELINE MODULES
+# =============================================================================
+modules:
+  # ---------------------------------------------------------------------------
+  # LongGF MODULE: Direct RNA-seq fusion detection
+  # ---------------------------------------------------------------------------
+  longgf:
+    enabled: true                               # Enable/disable LongGF analysis
+    keep_intermediate: false                    # Keep intermediate BAM/SAM files
+    
+    # Core LongGF parameters (command: LongGF input.bam gtf.gtf 100 50 100 2 0 1 0)
+    min_overlap_len: 100                        # Minimum overlap length for fusion detection
+    bin_size: 50                                # Bin size for genomic interval processing
+    min_map_len: 100                           # Minimum mapping length for valid alignments
+    pseudogene: 2                              # Pseudogene filter level (0=off, 1=strict, 2=moderate)
+    secondary_alignment: 0                      # Include secondary alignments (0=no, 1=yes)
+    min_sup_read: 1                            # Minimum supporting reads per fusion
+    output_flag: 0                             # Output format flag (0=standard, 1=verbose)
+
+  # ---------------------------------------------------------------------------
+  # GENION MODULE: Graph-based fusion detection with custom TYPHON enhancements
+  # ---------------------------------------------------------------------------
+  genion:
+    enabled: true                              # Enable/disable Genion analysis
+    min_support: 1                             # Minimum supporting reads (--min-support parameter)
+    keep_debug: true                           # Keep .fail files with detailed debug information
+    output_bin_dir: ./bin                      # Directory containing custom Genion binary (relative to project root)
+    debug_compilation: true                     # Compile Genion with debug flags for detailed output
+    threads: 4                                 # Compilation threads (Genion itself is single-threaded)
+
+  # ---------------------------------------------------------------------------
+  # JAFFAL MODULE: JAFFA-Long pipeline for Nanopore/PacBio data
+  # ---------------------------------------------------------------------------
+  jaffal:
+    enabled: true                              # Enable/disable JaffaL analysis
+    jaffal_dir: ./jaffal/JAFFA-version-2.3     # JaffaL installation directory (relative to project root)
+    genome_build: mm39                         # Genome build identifier (mm39, hg38, etc.)
+    annotation: gencode_M28                    # Annotation build identifier
+    
+    # Reference files for JaffaL (processed by setup_jaffal.py)
+    reference_files:
+      genome_fasta_gz: ./test_data/FILES_FOR_JAFFAL/mm39.fa.gz           # Genome FASTA (can be .gz)
+      transcriptome_fasta: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.fasta    # Transcriptome FASTA
+      annotation_bed: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.bed           # Gene annotations in BED format
+      annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab           # Tab-delimited gene info
+    
+    # JaffaL execution parameters
+    threads: 16                                # Number of threads for bpipe/JaffaL execution
+    keep_intermediate: false                   # Keep intermediate bpipe files
+    min_low_spanning_reads: 1                  # Minimum spanning reads for low-confidence fusions
+
+# =============================================================================
+# GLOBAL OPTIONS
+# =============================================================================
+options:
+  cleanup_intermediate: true                   # Remove intermediate files after successful completion
+  debug: true                                 # Enable debug logging throughout pipeline
+  keep_sam_files: true                        # Preserve SAM files for downstream analysis
+  
+  # Resource management
+  max_memory_gb: 32                           # Maximum memory usage per process (GB)
+  temp_dir: /tmp                              # Temporary directory for large file operations
+  
+  # Quality control
+  validate_inputs: true                       # Validate input files before processing
+  create_qc_reports: true                     # Generate quality control reports
+  
+  # Integration and overlap analysis
+  enable_integration: true                    # Run integration analysis after all modules complete
+  overlap_analysis_method: "both"            # Integration method: "python", "r", or "both" 

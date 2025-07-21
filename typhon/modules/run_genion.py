@@ -13,12 +13,14 @@ def decompress_if_gzipped(input_path, log):
     Otherwise, return the original path.
     The temp file will be deleted by the caller.
     """
-    if input_path.endswith('.gz'):
+    # Convert PosixPath to string if needed
+    input_path_str = str(input_path)
+    if input_path_str.endswith('.gz'):
         # Use only the file extension as the suffix (e.g., .fastq)
-        suffix = os.path.splitext(os.path.splitext(input_path)[0])[1]
+        suffix = os.path.splitext(os.path.splitext(input_path_str)[0])[1]
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        log(f"Decompressing {input_path} to temp file {tmp.name}")
-        with gzip.open(input_path, 'rb') as f_in:
+        log(f"Decompressing {input_path_str} to temp file {tmp.name}")
+        with gzip.open(input_path_str, 'rb') as f_in:
             with open(tmp.name, 'wb') as f_out:
                 # Read and write in chunks to handle large files
                 while True:
@@ -30,7 +32,7 @@ def decompress_if_gzipped(input_path, log):
                         chunk = chunk.encode('utf-8')
                     f_out.write(chunk)
         return tmp.name
-    return input_path
+    return input_path_str
 
 
 def get_genion_bin():
@@ -56,13 +58,28 @@ def run_genion(
     genion_bin=None,
     genomic_superdups=None,
     keep_intermediate=False,
-    log_path=None
+    log_path=None,
+    min_support=1
 ):
     """
     Run the Genion pipeline step for Typhon, for a single sample.
     Assumes reference files (GTF, self-align PAF, self-align TSV) are already prepared.
     Handles compressed (.gz) FASTQ and SAM files.
     All output files go directly to output_dir.
+    
+    Args:
+        input_fastq: Path to input FASTQ file
+        input_sam: Path to input SAM file (from LongGF/minimap2)
+        gtf_for_genion: Path to GTF file for Genion
+        selfalign_paf: Path to self-alignment PAF file
+        selfalign_tsv: Path to self-alignment TSV file
+        output_dir: Output directory for results
+        threads: Number of threads (not used by Genion itself)
+        genion_bin: Path to custom Genion binary
+        genomic_superdups: Path to genomic segmental duplications file
+        keep_intermediate: Whether to keep intermediate files
+        log_path: Path to log file
+        min_support: Minimum supporting reads for fusion calls (default: 1)
     """
     # Set up logging
     if log_path is None:
@@ -114,11 +131,11 @@ def run_genion(
             genion_bin,
             '-i', fastq_for_use,
             '--gtf', gtf_for_use,
-            '--gpaf', paf_file,
+            '-g', paf_file,
             '-s', selfalign_tsv_for_use,
             '-d', genomic_superdups,
             '-o', genion_out,
-            '--min-support', '1'
+            '--min-support', str(min_support)
         ]
         log(f"Running Genion: {' '.join(str(x) for x in genion_cmd)}")
         run_command(genion_cmd, shell=False)
