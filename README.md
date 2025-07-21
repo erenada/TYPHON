@@ -153,43 +153,59 @@ python typhon_main.py --output ./custom_results --threads 16
 
 ## Configuration
 
-TYPHON uses YAML configuration files. See `config_template.yaml` for a complete example.
+TYPHON uses comprehensive YAML configuration files. See `config_template.yaml` for a complete template, or `config.yaml` for a working example.
 
-For JaffaL integration, ensure you configure the reference files paths that will be processed during setup:
+The configuration includes all three pipeline modules with detailed parameters:
 
 ```yaml
 project:
-  name: TYPHON_Analysis
-  output_dir: ./results
+  name: TYPHON_Test_Analysis
+  output_dir: ./test_output_pipeline
   threads: 20
-
-options:
-  debug: true                 # Enable debug logging (can override with --no-debug)
+  author: Eren Ada, PhD
 
 input:
-  fastq_dir: ./data/FASTQ
+  fastq_dir: ./test_data/FASTQ
 
 references:
-  genome: ./references/genome.fa
-  gtf: ./references/annotation.gtf
-  transcriptome: ./references/transcripts.fa
+  genome: ./test_data/REFERENCES/GRCm39.primary_assembly.genome.fa
+  gtf: ./test_data/REFERENCES/gencode.vM28.annotation.gtf
+  transcriptome: ./test_data/REFERENCES/gencode.vM28.transcripts.fa
 
 modules:
   longgf:
     enabled: true
+    min_overlap_len: 100
+    bin_size: 50
+    min_map_len: 100
+    # ... additional LongGF parameters
+    
   genion:
     enabled: true
+    min_support: 1
+    keep_debug: true
+    output_bin_dir: ./bin
+    debug_compilation: true
+    
   jaffal:
     enabled: true
     jaffal_dir: ./jaffal/JAFFA-version-2.3
-    genome_build: mm39                    # or hg38 for human
-    annotation: gencode_M28               # or gencode43 for human
-    min_low_spanning_reads: 1             # Minimum spanning reads threshold
+    genome_build: mm39
+    annotation: gencode_M28
     reference_files:
-      genome_fasta_gz: /path/to/genome.fa.gz
-      transcriptome_fasta: /path/to/transcripts.fasta
-      annotation_bed: /path/to/annotation.bed
-      annotation_tab: /path/to/annotation.tab
+      genome_fasta_gz: ./test_data/FILES_FOR_JAFFAL/mm39.fa.gz
+      transcriptome_fasta: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.fasta
+      annotation_bed: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.bed
+      annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab
+    threads: 16
+    min_low_spanning_reads: 1
+
+options:
+  debug: true
+  cleanup_intermediate: true
+  keep_sam_files: true
+  validate_inputs: true
+  create_qc_reports: true
 ```
 
 ## Documentation
