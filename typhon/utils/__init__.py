@@ -1,12 +1,9 @@
+#!/usr/bin/env python3
 """
-Utility functions for Typhon.
+TYPHON Utilities Package
 
-This package contains utility functions for:
-- File handling and validation
-- Reference file preparation  
-- Logging configuration
-- Input validation
+Utility functions and classes for the TYPHON pipeline.
 """
 
-# Import will be added as we create the utility modules
-__all__ = [] 
+# Make sequence_utils available
+from .sequence_utils import * 

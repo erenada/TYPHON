@@ -478,6 +478,34 @@ Examples:
         if 'jaffal' in modules_to_run:
             run_jaffal_step(config, longgf_excel_file)
         
+        # Integration and exon repair (if enabled)
+        if config['options'].get('enable_integration', True):
+            integration_method = config['options'].get('overlap_analysis_method', 'exon_repair')
+            
+            if integration_method == 'exon_repair' and config['options'].get('exon_repair', {}).get('enabled', True):
+                logging.info("=" * 60)
+                logging.info("Starting Exon Repair Protocol")
+                logging.info("=" * 60)
+                
+                try:
+                    from typhon.modules.exon_repair import run_exon_repair
+                    
+                    exon_repair_results = run_exon_repair(
+                        config=config,
+                        output_dir=config['project']['output_dir']
+                    )
+                    
+                    logging.info("Exon repair completed successfully")
+                    logging.info(f"High-confidence chimeras: {exon_repair_results['statistics']['total_chimeras']}")
+                    
+                except Exception as e:
+                    logging.error(f"Exon repair failed: {e}")
+                    if config['options'].get('debug', False):
+                        import traceback
+                        logging.error(traceback.format_exc())
+                    # Don't exit - allow pipeline to complete with warning
+                    logging.warning("Continuing pipeline without exon repair")
+        
         # Pipeline completion
         logging.info("=" * 60)
         logging.info("TYPHON Pipeline completed successfully!")
