@@ -191,3 +191,10 @@ pipeline_dev_roadmap.md
 !examples/data/.gitkeep
 !tests/data/.gitkeep
 !bin/.gitkeep jaffal/
+
+# JaffaL installation directory
+jaffal/
+
+# Test data and output directories
+test_data/
+test_output_pipeline/
