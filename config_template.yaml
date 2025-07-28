@@ -1,8 +1,8 @@
 # TYPHON Pipeline Configuration Template
 # Author: Eren Ada, PhD
 # 
-# This template uses relative paths for portability across different systems.
-# The pipeline automatically converts relative paths to absolute paths at runtime.
+# This configuration file controls all aspects of the TYPHON chimeric RNA detection pipeline.
+# TYPHON integrates three complementary tools: LongGF, Genion, and JaffaL for comprehensive fusion detection.
 
 # =============================================================================
 # PROJECT SETTINGS
@@ -35,7 +35,7 @@ modules:
   # LongGF MODULE: Direct RNA-seq fusion detection
   # ---------------------------------------------------------------------------
   longgf:
-    enabled: true                               # Enable/disable LongGF analysis
+    enabled: false                              # Enable/disable LongGF analysis
     keep_intermediate: false                    # Keep intermediate BAM/SAM files
     
     # Core LongGF parameters (command: LongGF input.bam gtf.gtf 100 50 100 2 0 1 0)
@@ -51,19 +51,23 @@ modules:
   # GENION MODULE: Graph-based fusion detection with custom TYPHON enhancements
   # ---------------------------------------------------------------------------
   genion:
-    enabled: true                              # Enable/disable Genion analysis
+    enabled: false                             # Enable/disable Genion analysis
     min_support: 1                             # Minimum supporting reads (--min-support parameter)
     keep_debug: true                           # Keep .fail files with detailed debug information
-    output_bin_dir: ./bin                      # Directory containing custom Genion binary (relative to project root)
+    output_bin_dir: ./bin                      # Directory containing custom Genion binary
     debug_compilation: true                     # Compile Genion with debug flags for detailed output
     threads: 4                                 # Compilation threads (Genion itself is single-threaded)
+    
+    # Advanced Genion parameters (currently hardcoded, future expansion)
+    # genomic_superdups_file: ""               # Path to genomic segmental duplications file (optional)
+    # custom_gtf_modifications: true           # Apply TYPHON-specific GTF processing
 
   # ---------------------------------------------------------------------------
   # JAFFAL MODULE: JAFFA-Long pipeline for Nanopore/PacBio data
   # ---------------------------------------------------------------------------
   jaffal:
-    enabled: true                              # Enable/disable JaffaL analysis
-    jaffal_dir: ./jaffal/JAFFA-version-2.3     # JaffaL installation directory (relative to project root)
+    enabled: false                             # Enable/disable JaffaL analysis
+    jaffal_dir: ./jaffal/JAFFA-version-2.3     # JaffaL installation directory (absolute path)
     genome_build: mm39                         # Genome build identifier (mm39, hg38, etc.)
     annotation: gencode_M28                    # Annotation build identifier
     
@@ -78,6 +82,14 @@ modules:
     threads: 16                                # Number of threads for bpipe/JaffaL execution
     keep_intermediate: false                   # Keep intermediate bpipe files
     min_low_spanning_reads: 1                  # Minimum spanning reads for low-confidence fusions
+    
+    # Advanced JaffaL parameters (applied during setup)
+    # assembly_parameters:                     # Parameters for transcript assembly
+    #   velvet_hash_length: 19                 # Velvet k-mer length
+    #   oases_merge_length: 27                 # Oases merge k-mer length
+    # alignment_parameters:                    # Parameters for read alignment
+    #   bowtie2_sensitivity: "--very-sensitive-local"  # Bowtie2 alignment mode
+    #   minimap2_splice_flags: "-ax splice"    # Minimap2 splice alignment flags
 
 # =============================================================================
 # GLOBAL OPTIONS
@@ -97,4 +109,12 @@ options:
   
   # Integration and overlap analysis
   enable_integration: true                    # Run integration analysis after all modules complete
-  overlap_analysis_method: "both"            # Integration method: "python", "r", or "both" 
+  overlap_analysis_method: "exon_repair"     # Integration method: "exon_repair", "python", "r", or "both"
+  
+  # Exon repair protocol settings
+  exon_repair:
+    enabled: true                             # Enable molecular-level sequence reconstruction
+    bam_file: null                           # BAM file path (auto-detected from output_dir if null)
+    keep_intermediate: true                  # Keep intermediate BLAST and BED files
+    blast_threads: 20                        # Threads for BLAST operations
+    min_blast_identity: 80                   # Minimum BLAST identity percentage 
