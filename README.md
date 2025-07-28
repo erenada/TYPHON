@@ -1,282 +1,199 @@
-# Typhon: Modular Pipeline for Chimeric RNA Detection
+# TYPHON: Chimeric RNA Detection Pipeline
 
-**Developers:** Harry Kane, PhD; Eren Ada, PhD  
+**Authors:** Harry Kane, PhD; Eren Ada, PhD  
 **Version:** 1.0.0  
-**Last Updated:** 07/21/2025
 
-A comprehensive, research-grade bioinformatics pipeline for chimeric RNA detection from long-read RNA sequencing data, integrating LongGF, custom Genion, and JaffaL with enhanced logging and debugging capabilities.
+Modular bioinformatics pipeline for chimeric RNA detection from long-read RNA sequencing data, integrating LongGF, custom Genion, JaffaL, and exon repair protocols.
 
-## Directory Structure
-
-```
-Typhon_pipeline/
-├── typhon/                    # Main pipeline modules
-│   ├── modules/              # Pipeline step modules (longgf, genion, jaffal)
-│   ├── utils/                # Utility functions
-│   └── scripts/              # Supporting scripts and data processing
-├── tests/                    # Test suite (unit, integration, e2e)
-├── examples/                 # Example configurations and data
-│   ├── configs/              # Example YAML configurations
-│   └── data/                 # Small example datasets
-├── docs/                     # Documentation
-├── scripts/                  # Development and setup scripts
-├── bin/                      # Compiled binaries (custom Genion)
-├── jaffal/                   # JaffaL installation directory
-├── Genion_files/             # Custom Genion patch and source files
-└── test_data/                # Test datasets and references
-```
-
-## Quick Start
+## Installation
 
 ### Prerequisites
 - Linux (Ubuntu 18.04+)
-- Conda/Mamba package manager  
+- Conda/Mamba package manager
 - Java 11+ (for JaffaL)
 - 16+ GB RAM (32+ GB recommended)
 
-### Installation
+### Setup
 
 ```bash
-# 1. Clone and setup environment
+# Clone repository
 git clone https://github.com/erenada/TYPHON.git
 cd TYPHON
+
+# Create conda environment
 conda env create -f environment.yml
 conda activate typhon_env
 
-# 2. Configure your data paths
-cp config_template.yaml config.yaml
-# Edit config.yaml with your FASTQ files and reference paths
-
-# 3. Setup custom Genion (required - must run first)
+# Setup custom Genion
 python setup_genion.py
 
-# 4. Setup JaffaL (required for complete pipeline)
+# Setup JaffaL (optional)
 python setup_jaffal.py
 
-# 5. Verify installation
+# Verify installation
 ./bin/genion --version  # Should show: 1.2.3-dirty
-
-# 6. Run TYPHON pipeline
-python typhon_main.py
 ```
-
-### Setup Workflow
-
-The TYPHON pipeline requires a specific setup order:
-
-1. **Environment Setup**: Create conda environment and activate it
-2. **Configuration**: Copy and edit config template with your data paths
-3. **Setup Genion**: Install custom Genion binary with TYPHON modifications
-4. **Setup JaffaL**: Download, compile, and configure JaffaL with reference processing
-5. **Run Pipeline**: Execute the integrated TYPHON pipeline
-
-#### Setup Script Details
-
-**setup_genion.py**:
-- Clones official Genion repository
-- Applies TYPHON custom modifications (read ID tracking, debug output)
-- Compiles with research-grade enhancements
-- Installs binary to `./bin/genion`
-
-**setup_jaffal.py**:
-- Downloads JAFFA v2.3 and extracts to `./jaffal/`
-- Compiles custom C++ tools for fusion detection
-- Processes reference files and builds Bowtie2 indices
-- Applies TYPHON-specific configuration modifications
-
-**typhon_main.py**:
-- Integrates LongGF, custom Genion, and JaffaL modules
-- Manages data flow between pipeline stages
-- Provides comprehensive logging and error handling
-- Supports modular execution and configuration overrides
-
-### Basic Usage
-
-```bash
-# After completing setup steps above, run the pipeline:
-
-# Run complete pipeline (debug enabled by default)
-python typhon_main.py
-
-# Run specific modules
-python typhon_main.py --modules longgf genion
-
-# Run with custom settings and disable debug logging
-python typhon_main.py --config my_config.yaml --threads 30 --no-debug
-
-# Test run without execution
-python typhon_main.py --dry-run
-
-# Override output directory
-python typhon_main.py --output ./custom_results --threads 16
-```
-
-## Pipeline Modules
-
-### LongGF
-**Direct RNA-seq fusion detection**
-- Input: FASTQ files, genome, GTF annotation
-- Output: SAM alignments, Excel/CSV fusion results
-- Status: Production ready
-
-### Custom Genion  
-**Enhanced graph-based fusion detection**
-- Input: FASTQ files, SAM alignments, processed references
-- Output: Read-level fusion results with individual read IDs
-- Enhancement: Research-mode comprehensive reporting (141x more candidates)
-- Status: Production ready
-
-### JaffaL
-**JAFFA-Long pipeline integration**
-- Input: FASTQ files, reference genome/transcriptome
-- Output: JaffaL fusion results with overlap analysis
-- Status: Production ready
-
-## Enhanced Features
-
-### Comprehensive Logging
-- **Command Output Capture**: All external tool output logged with timing
-- **Module-Specific Logs**: Separate log files (longgf.log, genion.log, jaffal.log)
-- **Error Debugging**: Complete stderr capture for troubleshooting
-- **Reproducibility**: Full audit trail for scientific reproducibility
-
-### Robust Path Handling
-- **Absolute Path Resolution**: Automatic conversion eliminates common failures
-- **Portable Configuration**: Works with both relative and absolute paths
-- **Enhanced Validation**: Comprehensive input file checking
-
-### Research-Grade Output
-- **Custom Genion**: Debug mode provides all potential fusion candidates
-- **Read-Level Detail**: One line per supporting read with unique IDs
-- **Complete Transparency**: PASS/FAIL reasoning for all candidates
-- **No Hidden Filtering**: Researcher controls final filtering criteria
 
 ## Configuration
 
-TYPHON uses comprehensive YAML configuration files. See `config_template.yaml` for a complete template, or `config.yaml` for a working example.
+Copy and edit the configuration template:
+```bash
+cp config_template.yaml config.yaml
+# Edit config.yaml with your data paths
+```
 
-The configuration includes all three pipeline modules with detailed parameters:
+### Key Configuration Sections
 
+**Input/Output:**
 ```yaml
 project:
-  name: TYPHON_Test_Analysis
-  output_dir: ./test_output_pipeline
+  name: Your_Analysis_Name
+  output_dir: ./results
   threads: 20
-  author: Eren Ada, PhD
 
 input:
-  fastq_dir: ./test_data/FASTQ
+  fastq_dir: ./data/fastq_files
 
 references:
-  genome: ./test_data/REFERENCES/GRCm39.primary_assembly.genome.fa
-  gtf: ./test_data/REFERENCES/gencode.vM28.annotation.gtf
-  transcriptome: ./test_data/REFERENCES/gencode.vM28.transcripts.fa
+  genome: ./references/genome.fa
+  gtf: ./references/annotation.gtf
+  transcriptome: ./references/transcripts.fa
+```
 
+**Pipeline Modules:**
+```yaml
 modules:
   longgf:
     enabled: true
     min_overlap_len: 100
-    bin_size: 50
-    min_map_len: 100
-    # ... additional LongGF parameters
     
   genion:
     enabled: true
     min_support: 1
     keep_debug: true
-    output_bin_dir: ./bin
-    debug_compilation: true
     
   jaffal:
     enabled: true
     jaffal_dir: ./jaffal/JAFFA-version-2.3
-    genome_build: mm39
-    annotation: gencode_M28
-    reference_files:
-      genome_fasta_gz: ./test_data/FILES_FOR_JAFFAL/mm39.fa.gz
-      transcriptome_fasta: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.fasta
-      annotation_bed: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.bed
-      annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab
-    threads: 16
-    min_low_spanning_reads: 1
-
-options:
-  debug: true
-  cleanup_intermediate: true
-  keep_sam_files: true
-  validate_inputs: true
-  create_qc_reports: true
+    
+  # JaffaL reference files
+  reference_files:
+    genome_fasta_gz: ./references/genome.fa.gz
+    transcriptome_fasta: ./references/transcripts.fa
+    annotation_bed: ./references/annotation.bed
+    annotation_tab: ./references/annotation.tab
 ```
 
-## Documentation
+**Exon Repair Protocol:**
+```yaml
+options:
+  enable_integration: true
+  overlap_analysis_method: "exon_repair"
+  
+  exon_repair:
+    enabled: true
+    keep_intermediate: true
+    blast_threads: 20
+    min_blast_identity: 80
+```
 
-- **Module Documentation**: Detailed docs for each module available separately
-- **Genion Customization**: See `Genion_customization.md` for implementation details
-- **Development Roadmap**: See `pipeline_dev_roadmap.md` for development status
-- **System Dependencies**: See `docs/system_dependencies.md` for detailed installation requirements
-- **Integration Testing**: See `docs/genion_integration_improvements.md` for comprehensive testing documentation
+## Usage
 
-## Current Development Status
+### Basic Execution
+```bash
+# Run complete pipeline
+python typhon_main.py
 
-- **LongGF Integration**: Fully implemented and tested with production data
-- **Genion Integration**: Fully implemented and tested - produces identical results to original pipeline  
-- **JaffaL Integration**: Setup script implemented, execution module fully functional
-- **Configuration System**: YAML-based configuration with validation and example templates
-- **Testing Suite**: Comprehensive integration testing completed
+# Run with custom config
+python typhon_main.py --config my_config.yaml
 
-## Scientific Impact
+# Run specific modules
+python typhon_main.py --modules longgf genion
 
-TYPHON transforms standard fusion detection from clinical-grade conservative filtering to research-grade comprehensive analysis:
+# Override configuration
+python typhon_main.py --threads 30 --output ./custom_results
 
-- **LongGF**: Validated identical results (scientific accuracy maintained)
-- **Genion**: 141x more fusion candidates (4,816 vs 34) with complete reasoning
-- **JaffaL**: 99.6% consistency with enhanced robustness
-- **Integration**: All three modules working harmoniously with full logging
-
-## Troubleshooting
-
-### Common Issues
-- **Setup order**: Ensure you run `setup_genion.py` before `setup_jaffal.py`
-- **Module errors**: Check module-specific log files in `logs/` directory
-- **Path issues**: Use absolute paths in configuration
-- **Missing tools**: Ensure conda environment is activated
-- **Setup failures**: Run setup scripts with `--debug` flag for detailed logging
-- **Binary not found**: Verify `./bin/genion --version` shows `1.2.3-dirty` after setup
-
-### Getting Help
-1. Debug logging is enabled by default (disable with `--no-debug` if needed)
-2. Use dry-run mode to test configuration: `python typhon_main.py --dry-run`
-3. Check log files in your output directory's `logs/` folder
-4. Verify all paths in config.yaml exist and are accessible
-5. Ensure conda environment activation: `conda activate typhon_env`
+# Dry run (test configuration)
+python typhon_main.py --dry-run
+```
 
 ### Command-Line Options
-- `--config`, `-c`: Specify configuration file (default: config.yaml)
-- `--threads`, `-t`: Override thread count from configuration
-- `--output`, `-o`: Override output directory from configuration  
-- `--modules`: Run specific modules only (longgf, genion, jaffal)
-- `--debug`: Enable debug logging (enabled by default)
+- `--config`, `-c`: Configuration file (default: config.yaml)
+- `--threads`, `-t`: Override thread count
+- `--output`, `-o`: Override output directory
+- `--modules`: Run specific modules (longgf, genion, jaffal)
+- `--debug`: Enable debug logging (default)
 - `--no-debug`: Disable debug logging
 - `--dry-run`: Show execution plan without running
 
+## Pipeline Modules
 
+### LongGF
+Direct RNA-seq fusion detection using long-read alignments.
+- **Input:** FASTQ files, genome FASTA, GTF annotation
+- **Output:** SAM alignments, Excel/CSV fusion results
 
-## Citation
+### Custom Genion
+Graph-based fusion detection with TYPHON enhancements.
+- **Input:** FASTQ files, SAM alignments, processed references
+- **Output:** TSV fusion results with read-level detail
 
-When using TYPHON, please cite:
+### JaffaL
+JAFFA-Long pipeline for Nanopore/PacBio data.
+- **Input:** FASTQ files, reference genome/transcriptome
+- **Output:** Combined fusion results
 
-**TYPHON Pipeline**: Citation will be updated upon publication
+### Exon Repair
+Molecular-level sequence reconstruction protocol.
+- **Input:** Results from LongGF, Genion, JaffaL
+- **Output:** Validated chimeric sequences, filtered results
 
-**Integrated Tools**:
-- **LongGF**: Liu, Q., et al. (2020). LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. *BMC Genomics* 21:793. https://doi.org/10.1186/s12864-020-07207-4
+## Output Structure
 
-- **Genion**: Karaoglanoglu, F., et al. (2022). Genion, an accurate tool to detect gene fusion from long transcriptomics reads. *BMC Genomics* 23:129. https://doi.org/10.1186/s12864-022-08339-5
+```
+results/
+├── longgf_results/           # LongGF outputs
+├── genion_results/           # Genion outputs
+├── jaffal_results/           # JaffaL outputs
+├── exon_repair/              # Exon repair outputs
+│   ├── blast_results/
+│   ├── bed_files/
+│   └── reconstructed_sequences/
+└── logs/                     # Pipeline logs
+```
 
-- **JAFFA**: Davidson, N.M., et al. (2015). JAFFA: High sensitivity transcriptome-focused fusion gene detection. *Genome Medicine* 7:43. https://doi.org/10.1186/s13073-015-0167-x
+## Troubleshooting
 
-- **JAFFAL**: Davidson, N.M., et al. (2022). JAFFAL: detecting fusion genes with long-read transcriptome sequencing. *Genome Biology* 23:10. https://doi.org/10.1186/s13059-021-02588-5
+**Setup Issues:**
+- Ensure conda environment is activated: `conda activate typhon_env`
+- Run setup scripts in order: `setup_genion.py` then `setup_jaffal.py`
+- Verify Genion binary: `./bin/genion --version`
+
+**Runtime Issues:**
+- Check logs in `{output_dir}/logs/`
+- Use `--debug` for detailed logging
+- Validate paths in `config.yaml`
+- Use `--dry-run` to test configuration
+
+**Common Errors:**
+- **Path not found:** Use absolute paths in configuration
+- **Missing SAM files:** Run LongGF before Genion
+- **JaffaL setup failure:** Ensure Java 11+ is installed
+
+## Requirements
+
+**System:**
+- Linux OS (Ubuntu 18.04+)
+- 16+ GB RAM (32+ GB recommended)
+- 50+ GB free disk space
+
+**Software:**
+- Python 3.9+
+- Conda/Mamba
+- Java 11+ (OpenJDK recommended)
+- All bioinformatics tools installed via conda environment
 
 ## License
 
 Creative Commons Attribution-NonCommercial 4.0 International License  
-**Academic and Research Use Only** - Commercial use prohibited 
+**Academic and Research Use Only** 
