@@ -3,15 +3,50 @@
 **Authors:** Harry Kane, PhD; Eren Ada, PhD  
 **Version:** 1.0.0  
 
-Modular bioinformatics pipeline for chimeric RNA detection from long-read RNA sequencing data, integrating LongGF, custom Genion, JaffaL, and exon repair protocols.
+## Overview
+
+TYPHON is a comprehensive modular bioinformatics pipeline designed for robust chimeric RNA detection from long-read RNA sequencing data (Nanopore/PacBio). The pipeline integrates multiple complementary fusion detection tools—LongGF, custom Genion, and JaffaL—followed by a sophisticated five-phase exon repair protocol for molecular-level sequence validation.
+
+**Key Features:**
+- **Multi-tool integration:** Combines three fusion detection algorithms for comprehensive coverage
+- **Long-read optimized:** Specifically designed for Nanopore and PacBio sequencing technologies
+- **Molecular validation:** Advanced exon repair protocol reconstructs complete chimeric sequences with precise breakpoints
+- **Memory management:** Configurable processing modes to handle large datasets efficiently
+- **High-confidence results:** Cross-validation between tools and BLAST-based filtering ensures reliable fusion calls
+
+## About the Name
+
+TYPHON is named after [Typhon](https://en.wikipedia.org/wiki/Chimera_(mythology)), the monstrous father of the Chimera in Greek mythology. According to Hesiod, Typhon and Echidna were the parents of the Chimera—a fire-breathing hybrid creature composed of different animal parts. The name reflects this pipeline's purpose: detecting and analyzing chimeric RNA molecules, which are hybrid transcripts formed by the fusion of different genes, much like the mythological chimera combines parts from different creatures.
 
 ## Installation
 
 ### Prerequisites
 - Linux (Ubuntu 18.04+)
 - Conda/Mamba package manager
-- Java 11+ (for JaffaL)
+- Java 11+ (for JaffaL) - **Required:** Java 11 specifically for JaffaL compatibility
+- Perl-based rename utility (included in conda environment)
 - 16+ GB RAM (32+ GB recommended)
+
+### System Dependencies Installation
+
+**Java 11:**
+```bash
+# Ubuntu/Debian
+sudo apt install openjdk-11-jre
+
+# Verify installation
+java -version
+```
+
+**Perl Rename Utility:**
+The rename utility is included in the conda environment and installed automatically. Alternative system installation:
+```bash
+# Ubuntu/Debian (if needed)
+sudo apt install rename
+
+# Verify it's Perl-based
+rename --version
+```
 
 ### Setup
 
@@ -32,6 +67,16 @@ python setup_jaffal.py
 
 # Verify installation
 ./bin/genion --version  # Should show: 1.2.3-dirty
+
+# Verify system dependencies
+java -version           # Should show Java 11+
+```
+
+### Verification
+```bash
+# Verify all dependencies are available
+conda run -n typhon_env which minimap2 longgf samtools
+conda run -n typhon_env rename --man | head -5  # Check rename utility
 ```
 
 ## Configuration
@@ -232,6 +277,8 @@ These files represent the final, publication-ready results with molecular-level 
 - Ensure conda environment is activated: `conda activate typhon_env`
 - Run setup scripts in order: `setup_genion.py` then `setup_jaffal.py`
 - Verify Genion binary: `./bin/genion --version`
+- **Java issues:** Ensure Java 11+ is installed and accessible: `java -version`
+- **Rename utility issues:** Verify Perl-based rename is available: `rename --version`
 
 **Runtime Issues:**
 - Check logs in `{output_dir}/logs/`
@@ -271,4 +318,4 @@ These files represent the final, publication-ready results with molecular-level 
 ## License
 
 Creative Commons Attribution-NonCommercial 4.0 International License  
-**Academic and Research Use Only** 
+**Academic and Research Use Only**

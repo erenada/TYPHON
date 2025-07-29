@@ -207,3 +207,9 @@ test_output_pipeline/
 # IDE specific files
 .cursor/
 *.code-workspace
+
+# Documentation directory
+docs/
+
+# Tests directory
+tests/
