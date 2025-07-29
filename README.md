@@ -21,7 +21,7 @@ TYPHON is a comprehensive modular bioinformatics pipeline designed for robust ch
 
 ## About the Name
 
-TYPHON is named after [Typhon](https://en.wikipedia.org/wiki/Chimera_(mythology)), the monstrous father of the Chimera in Greek mythology. According to Hesiod, Typhon and Echidna were the parents of the Chimera—a fire-breathing hybrid creature composed of different animal parts. The name reflects this pipeline's purpose: detecting and analyzing chimeric RNA molecules, which are hybrid transcripts formed by the fusion of different genes, much like the mythological chimera combines parts from different creatures.
+TYPHON is named after [Typhon](https://en.wikipedia.org/wiki/Typhon), the monstrous father of the Chimera in Greek mythology. According to Hesiod, Typhon and Echidna were the parents of the [Chimera](https://en.wikipedia.org/wiki/Chimera_(mythology))—a fire-breathing hybrid creature composed of different animal parts. The name reflects this pipeline's purpose: detecting and analyzing chimeric RNA molecules, which are hybrid transcripts formed by the fusion of different genes, much like the mythological chimera combines parts from different creatures.
 
 ## Installation
 
