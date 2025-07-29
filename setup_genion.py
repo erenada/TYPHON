@@ -14,7 +14,7 @@ The TYPHON modifications enable:
 2. Full debug output enabled by default
 3. Enhanced tracking for fusion validation
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 Based on AI_GENION_CUSTOMIZATION_GUIDE.md and detailed analysis
 """
 import os

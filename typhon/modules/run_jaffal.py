@@ -8,7 +8,7 @@ with LongGF and Genion outputs using the original R scripts.
 This module converts the bash workflow from the original TYPHON Main.sh script
 (lines 120-170) to Python while preserving the exact same functionality.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os

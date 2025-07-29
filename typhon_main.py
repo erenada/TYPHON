@@ -5,7 +5,7 @@ TYPHON - Chimeric RNA Detection Pipeline
 Main entry point for the TYPHON pipeline that integrates LongGF, Genion, and JaffaL
 for comprehensive chimeric RNA detection from direct RNA sequencing data.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import argparse
@@ -330,196 +330,52 @@ def create_output_directory(output_dir):
 
 
 def main():
-    """Main pipeline execution function."""
-    parser = argparse.ArgumentParser(
-        description="TYPHON - Chimeric RNA Detection Pipeline",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Run with default configuration file (config.yaml)
-  python typhon_main.py
-
-  # Run with custom configuration file
-  python typhon_main.py --config my_config.yaml
-
-  # Run with config and override threads
-  python typhon_main.py --threads 30
-
-  # Run only LongGF module
-  python typhon_main.py --modules longgf
-        """
-    )
-    
-    parser.add_argument('--config', '-c', default='config.yaml',
-                        help='YAML configuration file (default: config.yaml)')
-    parser.add_argument('--threads', '-t', type=int,
-                        help='Number of threads (overrides config)')
-    parser.add_argument('--output', '-o',
-                        help='Output directory (overrides config)')
-    parser.add_argument('--modules', nargs='+', 
-                        choices=['longgf', 'genion', 'jaffal'],
-                        help='Run specific modules only')
-    parser.add_argument('--debug', action='store_true', default=True,
-                        help='Enable debug logging (enabled by default)')
-    parser.add_argument('--no-debug', action='store_true',
-                        help='Disable debug logging')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Show what would be executed without running')
-    
-    args = parser.parse_args()
-    
-    # Check if config file exists
-    if not os.path.exists(args.config):
-        parser.error(f"Configuration file '{args.config}' not found. Please ensure it exists or specify a different path with --config.")
-    
-    # Load configuration
-    config = load_config(args.config)
-    
-    # Apply command line overrides
-    if args.threads:
-        config['project']['threads'] = args.threads
-    if args.output:
-        config['project']['output_dir'] = args.output
-    
-    # Handle debug flags - --no-debug overrides --debug
-    if args.no_debug:
-        config['options']['debug'] = False
-    elif args.debug:
-        config['options']['debug'] = True
-    
-    # Setup basic logging first
-    setup_logging(debug=config['options'].get('debug', False))
-    
-    # Setup file logging after output directory is created
-    os.makedirs(config['project']['output_dir'], exist_ok=True)
-    log_file = os.path.join(config['project']['output_dir'], 'logs', 'typhon.log')
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    setup_logging(log_file, config['options'].get('debug', False))
-    
-    # Test that main logging is working
-    logging.info("Main typhon.log logging initialized successfully")
-    
-    # Log pipeline start
-    logging.info("=" * 60)
-    logging.info("TYPHON Pipeline Starting")
-    logging.info(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logging.info(f"Project: {config['project']['name']}")
-    logging.info(f"Output: {config['project']['output_dir']}")
-    logging.info(f"Threads: {config['project']['threads']}")
-    logging.info("=" * 60)
-    
-    # Validate configuration
-    if not validate_config(config):
-        sys.exit(1)
-    
-    # Create output directory
-    create_output_directory(config['project']['output_dir'])
-    
-    if args.dry_run:
-        logging.info("DRY RUN - Would execute the following steps:")
-        enabled_modules = []
-        if args.modules:
-            enabled_modules = args.modules
-        else:
-            for module, settings in config.get('modules', {}).items():
-                if settings.get('enabled', False):
-                    enabled_modules.append(module)
-        
-        for module in enabled_modules:
-            logging.info(f"  - {module.upper()} analysis")
-        
-        logging.info("Use --no-dry-run to actually run the pipeline")
-        sys.exit(0)
-    
     try:
-        sam_files = []
-        longgf_excel_file = None
+        # Parse command line arguments
+        args = parse_args()
         
-        # Determine which modules to run
-        modules_to_run = args.modules or []
-        if not modules_to_run:
-            # Run all enabled modules from config
-            for module, settings in config.get('modules', {}).items():
-                if settings.get('enabled', False):
-                    modules_to_run.append(module)
+        # Load and validate configuration
+        config = load_config(args.config)
         
-        # Execute modules in order
-        if 'longgf' in modules_to_run:
-            sam_files = run_longgf_step(config)
-            # Find the generated LongGF Excel file
-            output_dir = config['project']['output_dir']
-            longgf_results_dir = os.path.join(output_dir, 'longgf_results')
-            if os.path.exists(longgf_results_dir):
-                excel_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.xlsx'))
-                if excel_files:
-                    longgf_excel_file = str(excel_files[0])
+        # Set up logging
+        setup_logging(config)
+        logger = logging.getLogger(__name__)
         
-        if 'genion' in modules_to_run:
-            if not sam_files:
-                # Look for existing SAM files if LongGF wasn't run
-                output_dir = config['project']['output_dir']
-                sam_files = list(Path(output_dir).glob("*.sam"))
-                
-                # Also check common LongGF output locations
-                if not sam_files:
-                    for location in ['test_output_longgf', 'longgf_results', f"{output_dir}/longgf_results"]:
-                        if os.path.exists(location):
-                            sam_files = list(Path(location).glob("*.sam"))
-                            if sam_files:
-                                logging.info(f"Found existing SAM files in {location}")
-                                break
-                
-                if not sam_files:
-                    logging.error("No SAM files found for Genion. Run LongGF first or provide SAM files.")
-                    sys.exit(1)
+        # Create output directory
+        output_dir = config['project']['output_dir']
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Run pipeline modules
+        if config['modules']['longgf']['enabled']:
+            logger.info("Running LongGF module")
+            run_longgf(config)
             
-            run_genion_step(config, sam_files)
-        
-        if 'jaffal' in modules_to_run:
-            run_jaffal_step(config, longgf_excel_file)
-        
-        # Integration and exon repair (if enabled)
+        if config['modules']['genion']['enabled']:
+            logger.info("Running Genion module")
+            run_genion(config)
+            
+        if config['modules']['jaffal']['enabled']:
+            logger.info("Running JaffaL module")
+            run_jaffal(config)
+
+        # Run exon repair if enabled
+        exon_repair_results = None
         if config['options'].get('enable_integration', True):
-            integration_method = config['options'].get('overlap_analysis_method', 'exon_repair')
-            
-            if integration_method == 'exon_repair' and config['options'].get('exon_repair', {}).get('enabled', True):
-                logging.info("=" * 60)
-                logging.info("Starting Exon Repair Protocol")
-                logging.info("=" * 60)
-                
-                try:
-                    from typhon.modules.exon_repair import run_exon_repair
-                    
-                    exon_repair_results = run_exon_repair(
-                        config=config,
-                        output_dir=config['project']['output_dir']
-                    )
-                    
-                    logging.info("Exon repair completed successfully")
-                    logging.info(f"High-confidence chimeras: {exon_repair_results['statistics']['total_chimeras']}")
-                    
-                except Exception as e:
-                    logging.error(f"Exon repair failed: {e}")
-                    if config['options'].get('debug', False):
-                        import traceback
-                        logging.error(traceback.format_exc())
-                    # Don't exit - allow pipeline to complete with warning
-                    logging.warning("Continuing pipeline without exon repair")
-        
-        # Pipeline completion
-        logging.info("=" * 60)
-        logging.info("TYPHON Pipeline completed successfully!")
-        logging.info(f"Results saved to: {config['project']['output_dir']}")
-        logging.info(f"Log file: {log_file}")
-        logging.info("=" * 60)
+            logger.info("Running exon repair and integration analysis")
+            exon_repair_results = postprocess(config, output_dir)
+            logger.info("Exon repair and integration analysis completed")
+        else:
+            logger.info("Integration analysis disabled, skipping exon repair")
+
+        logger.info("Pipeline execution completed successfully")
+        return 0
         
     except Exception as e:
-        logging.error(f"Pipeline failed: {e}")
+        logger.error(f"Pipeline failed: {e}")
         if config['options'].get('debug', False):
             import traceback
-            logging.error(traceback.format_exc())
-        sys.exit(1)
+            logger.error(traceback.format_exc())
+        return 1
 
-
-if __name__ == "__main__":
-    main() 
+if __name__ == '__main__':
+    sys.exit(main()) 

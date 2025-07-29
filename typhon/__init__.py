@@ -6,8 +6,8 @@ pipeline for chimeric RNA detection using tools such as LongGF, Genion, and Jaff
 """
 
 __version__ = "0.1.0"
-__author__ = "Eren Ada, PhD"
-__email__ = "eren.ada@example.com"  # Update with actual email
+__author__ = "Harry Kane, PhD; Eren Ada, PhD"
+__email__ = "erenada@gmail.com"  
 __description__ = "Modular pipeline for chimeric RNA detection"
 
 # Import main components for easy access

@@ -5,7 +5,7 @@ Phase 1: Data Integration and Preparation
 Implements R code lines 48-96: Load and integrate results from all three tools
 with origin tracking and GTF annotation mapping.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os
@@ -94,12 +94,10 @@ class DataIntegrator:
         # Data cleaning and deduplication (R code lines 59-62)
         self.logger.info("Step 1.3: Data cleaning and deduplication...")
         
-        # Remove Genion entries with :: formatting (keep only : format)
-        # R equivalent: Total <- Total[!grepl("::", Total$Chimera_ID),]
         # Handle NaN values and ensure all Chimera_IDs are strings
+        # Note: Genion :: formatting is now standardized during data loading
         total_df = total_df.dropna(subset=['Chimera_ID']).copy()
         total_df['Chimera_ID'] = total_df['Chimera_ID'].astype(str)
-        total_df = total_df[~total_df['Chimera_ID'].str.contains('::')].copy()
         
         # Remove duplicates by Read_ID (keep first occurrence)
         # R equivalent: Total <- Total %>% distinct(Read_ID, .keep_all=TRUE)
@@ -113,7 +111,16 @@ class DataIntegrator:
         
         # Split Chimera_ID into GeneA and GeneB
         # R equivalent: Data[c('GeneA', 'GeneB')] <- str_split_fixed(Data$Chimera_ID, ':', 2)
-        total_df[['GeneA', 'GeneB']] = total_df['Chimera_ID'].str.split(':', expand=True)
+        # Handle cases where Chimera_ID may not have exactly 2 parts
+        split_chimera = total_df['Chimera_ID'].str.split(':', expand=True)
+        if split_chimera.shape[1] >= 2:
+            total_df['GeneA'] = split_chimera.iloc[:, 0]
+            total_df['GeneB'] = split_chimera.iloc[:, 1]
+        else:
+            # Handle malformed Chimera_IDs by setting them to empty strings
+            total_df['GeneA'] = ''
+            total_df['GeneB'] = ''
+            self.logger.warning(f"Some Chimera_IDs don't contain ':' separator. Setting GeneA/GeneB to empty.")
         
         # Load and process GTF for gene metadata
         gtf_genes = self._load_gtf_gene_metadata()
@@ -233,7 +240,12 @@ class DataIntegrator:
     
     
     def _load_genion_results(self, genion_dir: str) -> pd.DataFrame:
-        """Load Genion results from .tsv and .fail files."""
+        """
+        Load Genion results from .tsv and .fail files.
+        
+        Standardizes Chimera_ID format by converting :: to : for consistency with other tools.
+        This ensures Genion results are properly integrated instead of being filtered out.
+        """
         # R equivalent: Genion <- read.xlsx("file.xlsx")
         # Genion_subset <- Genion[, c(28, 8)]
         # Based on actual data: Read_ID is last column, Chimera_ID with :: is column 8 (0-indexed: 7)
@@ -255,7 +267,9 @@ class DataIntegrator:
                     chimera_ids = df.iloc[:, 7].dropna().tolist()  # Column 8 (0-indexed: 7)
                     
                     for read_id, chimera_id in zip(read_ids, chimera_ids):
-                        genion_chimeras.append({'Read_ID': str(read_id), 'Chimera_ID': str(chimera_id)})
+                        # Standardize :: to : format for consistency with other tools
+                        standardized_chimera_id = str(chimera_id).replace('::', ':')
+                        genion_chimeras.append({'Read_ID': str(read_id), 'Chimera_ID': standardized_chimera_id})
                     
                     files_found.append(str(tsv_file))
                 else:
@@ -273,7 +287,9 @@ class DataIntegrator:
                     chimera_ids = df.iloc[:, 7].dropna().tolist()  # Column 8 (0-indexed: 7)
                     
                     for read_id, chimera_id in zip(read_ids, chimera_ids):
-                        genion_chimeras.append({'Read_ID': str(read_id), 'Chimera_ID': str(chimera_id)})
+                        # Standardize :: to : format for consistency with other tools
+                        standardized_chimera_id = str(chimera_id).replace('::', ':')
+                        genion_chimeras.append({'Read_ID': str(read_id), 'Chimera_ID': standardized_chimera_id})
                     
                     files_found.append(str(fail_file))
                 else:

@@ -187,6 +187,11 @@ work/
 # Development and internal documentation
 pipeline_dev_roadmap.md
 
+# Development and documentation files
+config_template.yaml
+docs/genion_integration_improvements.md
+pipeline_dev_roadmap.md
+
 # Keep important empty directories
 !examples/data/.gitkeep
 !tests/data/.gitkeep
@@ -198,3 +203,7 @@ jaffal/
 # Test data and output directories
 test_data/
 test_output_pipeline/
+
+# IDE specific files
+.cursor/
+*.code-workspace

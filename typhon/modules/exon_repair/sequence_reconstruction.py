@@ -8,7 +8,7 @@ chimeric sequence assembly.
 
 Based on R code lines 311-337 from Annotated_alternative_exon_repair_code_for_Eren.md
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os
@@ -314,10 +314,15 @@ class SequenceReconstructor:
                 'Interchromosomal'
             )
             
-            # Export results as CSV
+            # Export results as CSV and Excel
             # R line 305: write.xlsx(ChRNAs, file = "All_chRNAs_passing_blast_exon_repair.xlsx")
             output_path = os.path.join(self.work_dir, 'All_chRNAs_passing_blast_exon_repair.csv')
             filtered_chimeras.to_csv(output_path, index=False)
+            
+            # Also save as Excel format
+            excel_output_path = os.path.join(self.work_dir, 'All_chRNAs_passing_blast_exon_repair.xlsx')
+            filtered_chimeras.to_excel(excel_output_path, index=False)
+            self.logger.info(f"Results exported to: {output_path} and {excel_output_path}")
             
             # Remove duplicate Read_ID/Chimera_ID combinations for final statistics
             # R line 303: data_subset <- data %>% distinct(Read_ID, Chimera_ID, .keep_all=TRUE)

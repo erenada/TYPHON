@@ -5,7 +5,7 @@ Sequence Utilities for TYPHON Exon Repair Protocol
 Contains utility functions for FASTA sequence manipulation, particularly
 for merging sequences with identical headers as required by the exon repair protocol.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 
 Credit: merge_sequences_by_header function based on public script by user "phngs" 
 from bioinformatics.stackexchange.com - thank you for the elegant solution!

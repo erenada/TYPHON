@@ -10,7 +10,7 @@ oases, blat, bpipe, bbmap, etc.), this script focuses on JaffaL-specific
 setup: downloading JAFFA, compiling custom C++ tools, and applying TYPHON 
 modifications.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os

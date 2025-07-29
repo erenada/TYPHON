@@ -5,7 +5,7 @@ Phase 3: BLAST Analysis and Transcript Selection
 Implements R code lines 190-225: Parse BLAST results, filter transcripts,
 and determine chimera gene order.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os
@@ -135,7 +135,16 @@ class TranscriptSelector:
             
             # Split Chimera_ID into GeneA and GeneB (R code line 201)
             # R equivalent: Data[c('GeneA', 'GeneB')] <- str_split_fixed(Data$Chimera_ID, ':', 2)
-            blast_df[['GeneA', 'GeneB']] = blast_df['Chimera_ID'].str.split(':', expand=True)
+            # Handle cases where Chimera_ID may not have exactly 2 parts
+            split_chimera = blast_df['Chimera_ID'].str.split(':', expand=True)
+            if split_chimera.shape[1] >= 2:
+                blast_df['GeneA'] = split_chimera.iloc[:, 0]
+                blast_df['GeneB'] = split_chimera.iloc[:, 1]
+            else:
+                # Handle malformed Chimera_IDs by setting them to empty strings
+                blast_df['GeneA'] = ''
+                blast_df['GeneB'] = ''
+                self.logger.warning(f"Some Chimera_IDs don't contain ':' separator in BLAST results")
             
             # Remove rows without chimera information
             blast_df = blast_df.dropna(subset=['Chimera_ID'])

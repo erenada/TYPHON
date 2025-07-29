@@ -1,5 +1,5 @@
 # TYPHON Pipeline Configuration Template
-# Author: Eren Ada, PhD
+# Authors: Harry Kane, PhD; Eren Ada, PhD
 # 
 # This configuration file controls all aspects of the TYPHON chimeric RNA detection pipeline.
 # TYPHON integrates three complementary tools: LongGF, Genion, and JaffaL for comprehensive fusion detection.

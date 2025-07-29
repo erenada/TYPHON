@@ -11,6 +11,7 @@ This package contains the main pipeline step modules:
 # Import modules as they are created
 from .run_genion import run_genion, get_genion_bin
 from .run_longgf import run_longgf
+from .run_jaffal import run_jaffal
 from .postprocess import postprocess
 
-__all__ = ['run_genion', 'get_genion_bin', 'run_longgf', 'postprocess'] 
+__all__ = ['run_genion', 'get_genion_bin', 'run_longgf', 'run_jaffal', 'postprocess'] 

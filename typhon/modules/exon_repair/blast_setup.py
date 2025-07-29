@@ -4,7 +4,7 @@ Phase 2: Sequence Extraction and BLAST Setup
 
 Implements R code lines 99-140: Extract sequences from BAM files and prepare BLAST database.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 import os
@@ -158,6 +158,10 @@ class BlastSetupProcessor:
                 subprocess.run(cmd5, stdout=f, check=True, text=True)
             
             self.logger.info(f"Sequence extraction completed: {final_fasta}")
+            
+            # Create Original_ONT file with Chimera_ID headers for QC compatibility
+            self._create_original_ont_file(final_fasta)
+            
             return final_fasta
             
         except subprocess.CalledProcessError as e:
@@ -514,3 +518,48 @@ class BlastSetupProcessor:
         except Exception as e:
             self.logger.error(f"Unexpected error in BLAST analysis: {e}")
             raise 
+    
+    
+    def _create_original_ont_file(self, sequences_file: str):
+        """
+        Create Original_ONT_overlapping_mRNA_chimeras_fasta.fa with Chimera_ID headers.
+        
+        Converts Read_IDs to Chimera_IDs using the read_chimera_pairs.txt mapping,
+        matching the original bash script functionality.
+        """
+        try:
+            import pandas as pd
+            from Bio import SeqIO
+            
+            # Load Read_ID → Chimera_ID mapping
+            mapping_file = os.path.join(self.work_dir, 'read_chimera_pairs.txt')
+            if not os.path.exists(mapping_file):
+                self.logger.warning("Read-chimera mapping file not found, skipping Original_ONT creation")
+                return
+            
+            # Read the mapping (tab-separated: Read_ID → Chimera_ID)
+            mapping_df = pd.read_csv(mapping_file, sep='\t', header=None, names=['Read_ID', 'Chimera_ID'])
+            id_mapping = dict(zip(mapping_df['Read_ID'], mapping_df['Chimera_ID']))
+            
+            # Create Original_ONT file with converted headers
+            original_ont_file = os.path.join(self.work_dir, 'Original_ONT_overlapping_mRNA_chimeras_fasta.fa')
+            
+            sequences_converted = 0
+            with open(original_ont_file, 'w') as out_f:
+                for record in SeqIO.parse(sequences_file, 'fasta'):
+                    read_id = record.id
+                    if read_id in id_mapping:
+                        chimera_id = id_mapping[read_id]
+                        # Write with Chimera_ID header
+                        out_f.write(f">{chimera_id}\n{record.seq}\n")
+                        sequences_converted += 1
+                    else:
+                        # Keep original Read_ID if no mapping found
+                        out_f.write(f">{read_id}\n{record.seq}\n")
+                        sequences_converted += 1
+            
+            self.logger.info(f"Created Original_ONT file with {sequences_converted} sequences: {original_ont_file}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create Original_ONT file: {e}")
+            # Continue without failing the whole process

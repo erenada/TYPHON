@@ -4,7 +4,7 @@ TYPHON Exon Repair Module
 Molecular-level sequence reconstruction for chimeric RNA detection.
 Replaces simple statistical integration with comprehensive exon repair protocol.
 
-Author: Eren Ada, PhD
+Authors: Harry Kane, PhD; Eren Ada, PhD
 """
 
 from .data_integration import DataIntegrator

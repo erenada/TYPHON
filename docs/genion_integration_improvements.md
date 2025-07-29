@@ -2,7 +2,7 @@
 
 **Project:** Typhon Pipeline - Chimeric RNA Detection  
 **Phase:** Phase 2.3 - Genion Integration Testing  
-**Author:** Eren Ada, PhD  
+**Authors:** Harry Kane, PhD; Eren Ada, PhD  
 **Date:** July 17, 2025  
 **Status:** COMPLETED  
 
