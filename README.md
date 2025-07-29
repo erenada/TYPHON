@@ -345,6 +345,10 @@ These files represent the final, publication-ready results with molecular-level 
 
 TYPHON integrates several published bioinformatics tools. Please cite the original publications when using this pipeline:
 
+### TYPHON Pipeline
+
+**Citation for TYPHON will be provided once the manuscript is published.**
+
 ### Core Tools
 
 **LongGF** (Long-read Gene Fusion detection):
