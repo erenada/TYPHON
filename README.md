@@ -58,11 +58,32 @@ cd TYPHON
 # Create conda environment
 conda env create -f environment.yml
 conda activate typhon_env
+```
 
-# Setup custom Genion
+## Configuration
+
+**IMPORTANT:** Configure the pipeline before running setup scripts, as they read paths from the configuration file.
+
+Copy and edit the configuration template:
+```bash
+cp config_template.yaml config.yaml
+# Edit config.yaml with your data paths and settings
+```
+
+**Required configuration steps:**
+1. Set correct paths for `input.fastq_dir`, `references.genome`, `references.gtf`, `references.transcriptome`
+2. Configure `jaffal.jaffal_dir` and `jaffal.reference_files` paths
+3. Set `genion.output_bin_dir` path
+4. Adjust thread counts and memory settings for your system
+
+### Complete Setup
+
+After configuring `config.yaml`, run the setup scripts:
+```bash
+# Setup custom Genion (reads paths from config.yaml)
 python setup_genion.py
 
-# Setup JaffaL (optional)
+# Setup JaffaL (reads paths from config.yaml)
 python setup_jaffal.py
 
 # Verify installation
@@ -79,13 +100,7 @@ conda run -n typhon_env which minimap2 longgf samtools
 conda run -n typhon_env rename --man | head -5  # Check rename utility
 ```
 
-## Configuration
-
-Copy and edit the configuration template:
-```bash
-cp config_template.yaml config.yaml
-# Edit config.yaml with your data paths
-```
+## Configuration Reference
 
 ### Key Configuration Sections
 
