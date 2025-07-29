@@ -23,9 +23,9 @@ TYPHON is named after [Typhon](https://en.wikipedia.org/wiki/Chimera_(mythology)
 ### Prerequisites
 - Linux (Ubuntu 18.04+)
 - Conda/Mamba package manager
-- Java 11+ (for JaffaL) - **Required:** Java 11 specifically for JaffaL compatibility
-- Perl-based rename utility (included in conda environment)
-- 16+ GB RAM (32+ GB recommended)
+- 16+ GB RAM (32+ GB recommended for large datasets)
+- 50+ GB free disk space (minimum)
+- Java 11+ and Perl rename utility (installation instructions below)
 
 ### System Dependencies Installation
 
@@ -113,14 +113,7 @@ python setup_jaffal.py
 
 # Verify installation
 ./bin/genion --version  # Should show: 1.2.3-dirty
-
-# Verify system dependencies
 java -version           # Should show Java 11+
-```
-
-### Verification
-```bash
-# Verify all dependencies are available
 conda run -n typhon_env which minimap2 longgf samtools
 conda run -n typhon_env rename --man | head -5  # Check rename utility
 ```
@@ -317,8 +310,7 @@ These files represent the final, publication-ready results with molecular-level 
 - Ensure conda environment is activated: `conda activate typhon_env`
 - Run setup scripts in order: `setup_genion.py` then `setup_jaffal.py`
 - Verify Genion binary: `./bin/genion --version`
-- **Java issues:** Ensure Java 11+ is installed and accessible: `java -version`
-- **Rename utility issues:** Verify Perl-based rename is available: `rename --version`
+- Check system dependencies: `java -version` and `rename --version`
 
 **Runtime Issues:**
 - Check logs in `{output_dir}/logs/`
@@ -329,31 +321,20 @@ These files represent the final, publication-ready results with molecular-level 
 **Common Errors:**
 - **Path not found:** Use absolute paths in configuration
 - **Missing SAM files:** Run LongGF before Genion
-- **JaffaL setup failure:** Ensure Java 11+ is installed
-- **Out of memory errors:** Enable `process_samples_sequentially: true` for JaffaL or reduce `max_memory` settings
+- **JaffaL setup failure:** Check Java 11+ installation and JaffaL reference files
+- **Out of memory errors:** Enable `process_samples_sequentially: true` for JaffaL
 
-## Requirements
+## Performance Notes
 
-**System:**
-- Linux OS (Ubuntu 18.04+)
-- 16+ GB RAM (32+ GB recommended for large datasets)
-- Storage requirements:
-  - 50+ GB free disk space (minimum)
-  - Additional space for FASTQ files (typically 5-50+ GB per sample for long-read data)
-  - Temporary processing space: 2-3x the size of input FASTQ files
-  - Consider that pipeline generates multiple intermediate files during processing
+**Storage Considerations:**
+- FASTQ files: 5-50+ GB per sample for long-read data
+- Temporary processing space: 2-3x the size of input FASTQ files
+- Monitor disk space during execution as intermediate files can be substantial
 
-**Software:**
-- Python 3.9+
-- Conda/Mamba
-- Java 11+ (OpenJDK recommended)
-- All bioinformatics tools installed via conda environment
-
-**Performance Notes:**
-- Long-read FASTQ files are typically large (several GB to 50+ GB per sample)
-- Ensure sufficient RAM for genome indexing and alignment steps
+**Optimization:**
 - SSD storage recommended for faster I/O during intensive processing steps
-- Monitor disk space during pipeline execution as intermediate files can be substantial
+- Ensure sufficient RAM for genome indexing and alignment steps
+- Use `process_samples_sequentially: true` for JaffaL on memory-constrained systems
 
 ## License
 
