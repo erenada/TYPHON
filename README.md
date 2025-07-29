@@ -129,38 +129,94 @@ python typhon_main.py --dry-run
 ## Pipeline Modules
 
 ### LongGF
-Direct RNA-seq fusion detection using long-read alignments.
+Direct RNA-seq fusion detection using long-read alignments with minimap2.
 - **Input:** FASTQ files, genome FASTA, GTF annotation
-- **Output:** SAM alignments, Excel/CSV fusion results
+- **Process:** Aligns reads to genome, identifies fusion candidates through split alignments
+- **Parameters:** Configurable overlap length (100bp default), pseudogene filtering, minimum support reads
+- **Output:** SAM alignments, Excel/CSV fusion results with read-level evidence
+- **Post-processing:** R-based result aggregation and chimera classification
 
 ### Custom Genion
-Graph-based fusion detection with TYPHON enhancements.
-- **Input:** FASTQ files, SAM alignments, processed references
-- **Output:** TSV fusion results with read-level detail
+Graph-based fusion detection with TYPHON-specific enhancements and debug output.
+- **Input:** FASTQ files, SAM alignments (from LongGF), processed reference transcriptome
+- **Process:** Builds splice graphs, detects fusion events using custom binary with enhanced logging
+- **Features:** Self-alignment PAF generation, TSV-formatted detailed output, failure analysis (.fail files)
+- **Output:** TSV fusion results with read-level detail, comprehensive debug information
+- **Integration:** Custom compilation with debug flags for detailed fusion characterization
 
-### JaffaL
-JAFFA-Long pipeline for Nanopore/PacBio data.
-- **Input:** FASTQ files, reference genome/transcriptome
-- **Output:** Combined fusion results
+### JaffaL (JAFFA-Long)
+JAFFA pipeline optimized for Nanopore/PacBio long-read data using bpipe workflow.
+- **Input:** FASTQ files, reference genome/transcriptome, annotation databases
+- **Process:** Assembly-based fusion detection with transcript reconstruction
+- **Tools:** Integrates Velvet/Oases assembly, Bowtie2/Minimap2 alignment, custom fusion calling
+- **Output:** Combined fusion results with confidence scoring and breakpoint resolution
+- **Validation:** Cross-references with known fusion databases and genomic repeat regions
 
-### Exon Repair
-Molecular-level sequence reconstruction protocol.
-- **Input:** Results from LongGF, Genion, JaffaL
-- **Output:** Validated chimeric sequences, filtered results
+### Exon Repair Protocol
+Five-phase molecular-level sequence reconstruction for chimeric RNA validation.
+- **Phase 1:** Data integration from LongGF, Genion, and JaffaL results
+- **Phase 2:** BLAST database setup and sequence extraction from fusion candidates
+- **Phase 3:** Transcript selection using BLAST analysis and confidence scoring
+- **Phase 4:** Exon boundary detection and breakpoint-aware coordinate calculation
+- **Phase 5:** Sequence reconstruction using bedtools getfasta and multi-step merging
+- **Output:** Validated chimeric sequences with precise breakpoint coordinates, filtered fusion library
+- **Features:** Handles complex splice variants, validates fusion feasibility, generates high-confidence chimeric sequences
 
 ## Output Structure
 
 ```
 results/
-├── longgf_results/           # LongGF outputs
-├── genion_results/           # Genion outputs
-├── jaffal_results/           # JaffaL outputs
-├── exon_repair/              # Exon repair outputs
-│   ├── blast_results/
-│   ├── bed_files/
-│   └── reconstructed_sequences/
-└── logs/                     # Pipeline logs
+├── longgf_results/                    # LongGF outputs
+│   ├── *.sam                         # Alignment files for each sample
+│   ├── *.log                         # Detailed alignment logs
+│   ├── *_results.txt                 # Processed fusion candidates
+│   └── Combined_LongGF_chimera_results_total.xlsx  # Aggregated results
+├── genion_results/                   # Genion outputs  
+│   ├── *_genion.tsv                 # Main fusion results per sample
+│   ├── *_genion.tsv.fail            # Debug output for failed candidates
+│   └── genion_references/           # Processed reference files
+├── jaffal_results/                  # JaffaL outputs
+│   ├── jaffa_results.csv           # Primary fusion calls
+│   ├── *.fastq/                    # Per-sample bpipe output directories
+│   └── overlap_analysis.xlsx       # Cross-tool comparison results
+├── exon_repair/                     # Exon repair outputs
+│   ├── blast_results/              # BLAST analysis files
+│   ├── bed_files/                  # Breakpoint coordinate files
+│   ├── reconstructed_sequences/    # Final chimeric sequences
+│   │   ├── *_geneA.fa             # 5' partner sequences
+│   │   ├── *_geneB.fa             # 3' partner sequences  
+│   │   └── *_merged.fa            # Complete chimeric sequences
+│   └── phase[1-5]_results/         # Intermediate processing outputs
+└── logs/                           # Pipeline logs
+    ├── typhon.log                  # Main pipeline log
+    ├── longgf.log                  # Module-specific logs
+    ├── genion.log
+    └── jaffal.log
 ```
+
+## Final Results
+
+The pipeline produces two primary final outputs in the `exon_repair/` directory:
+
+### Validated Chimeric Sequences
+- **File:** `Merged_seqs_exon_repair_renamed.fa`
+- **Format:** FASTA
+- **Content:** High-confidence reconstructed chimeric sequences with precise breakpoint coordinates
+- **Features:** 5' and 3' gene partners merged into complete chimeric transcripts
+
+### Comprehensive Chimera Metadata
+- **Files:** 
+  - `All_chRNAs_passing_blast_exon_repair.xlsx` (Excel format)
+  - `All_chRNAs_passing_blast_exon_repair.csv` (CSV format)
+- **Content:** Validated chimeras that passed all filtering and BLAST analysis steps
+- **Includes:** 
+  - Chromosomal classification (Intrachromosomal/Interchromosomal)
+  - BLAST validation metrics
+  - Breakpoint coordinates and exon boundaries
+  - Read-level evidence and support statistics
+  - Tool origin tracking (LongGF, Genion, JaffaL)
+
+These files represent the final, publication-ready results with molecular-level validation and can be used directly for downstream analysis, visualization, or experimental validation.
 
 ## Troubleshooting
 
@@ -184,14 +240,24 @@ results/
 
 **System:**
 - Linux OS (Ubuntu 18.04+)
-- 16+ GB RAM (32+ GB recommended)
-- 50+ GB free disk space
+- 16+ GB RAM (32+ GB recommended for large datasets)
+- Storage requirements:
+  - 50+ GB free disk space (minimum)
+  - Additional space for FASTQ files (typically 5-50+ GB per sample for long-read data)
+  - Temporary processing space: 2-3x the size of input FASTQ files
+  - Consider that pipeline generates multiple intermediate files during processing
 
 **Software:**
 - Python 3.9+
 - Conda/Mamba
 - Java 11+ (OpenJDK recommended)
 - All bioinformatics tools installed via conda environment
+
+**Performance Notes:**
+- Long-read FASTQ files are typically large (several GB to 50+ GB per sample)
+- Ensure sufficient RAM for genome indexing and alignment steps
+- SSD storage recommended for faster I/O during intensive processing steps
+- Monitor disk space during pipeline execution as intermediate files can be substantial
 
 ## License
 
