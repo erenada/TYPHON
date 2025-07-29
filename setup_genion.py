@@ -216,6 +216,7 @@ Examples:
     
     # Setup logging
     log_dir = os.path.join(project_config.get('output_dir', script_dir), 'logs')
+    os.makedirs(log_dir, exist_ok=True)  # Create log directory if it doesn't exist
     log_path = os.path.join(log_dir, 'setup_genion.log')
     
     # Initialize logging

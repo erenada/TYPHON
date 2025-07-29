@@ -184,7 +184,7 @@ def compile_custom_tools(jaffal_path):
         try:
             subprocess.run([
                 'g++', '-std=c++11', '-O3', '-o', bin_file, src_file
-            ], check=True, cwd=jaffal_path)
+            ], check=True)
             logging.info(f"Successfully compiled {tool}")
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to compile {tool}: {e}")
