@@ -1,5 +1,10 @@
 # TYPHON: Chimeric RNA Detection Pipeline
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+[![R](https://img.shields.io/badge/R-%3E%3D4.0.0-blue.svg)](https://www.r-project.org/)
+[![Platform](https://img.shields.io/badge/Platform-Linux-green.svg)](https://www.linux.org/)
+
 **Authors:** Harry Kane, PhD; Eren Ada, PhD  
 **Version:** 1.0.0  
 
@@ -337,6 +342,10 @@ These files represent the final, publication-ready results with molecular-level 
 - Use `process_samples_sequentially: true` for JaffaL on memory-constrained systems
 
 ## License
+
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+[![R](https://img.shields.io/badge/R-%3E%3D4.0.0-blue.svg)](https://www.r-project.org/)
 
 Creative Commons Attribution-NonCommercial 4.0 International License  
 **Academic and Research Use Only**
