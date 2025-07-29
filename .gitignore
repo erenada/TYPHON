@@ -186,6 +186,7 @@ work/
 
 # Development and internal documentation
 pipeline_dev_roadmap.md
+requirements-dev.txt
 
 # Development and documentation files
 config_template.yaml
