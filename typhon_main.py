@@ -303,7 +303,8 @@ def run_jaffal_step(config, longgf_excel_file=None):
             jaffal_dir=jaffal_dir,
             output_dir=output_dir,
             threads=jaffal_config.get('threads', config['project'].get('threads', 4)),
-            keep_intermediate=jaffal_config.get('keep_intermediate', False)
+            keep_intermediate=jaffal_config.get('keep_intermediate', False),
+            config=config
         )
         
         module_logger.info("JaffaL analysis completed successfully")

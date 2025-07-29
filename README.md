@@ -76,19 +76,25 @@ modules:
     enabled: true
     jaffal_dir: ./jaffal/JAFFA-version-2.3
     
-  # JaffaL reference files
-  reference_files:
-    genome_fasta_gz: ./references/genome.fa.gz
-    transcriptome_fasta: ./references/transcripts.fa
-    annotation_bed: ./references/annotation.bed
-    annotation_tab: ./references/annotation.tab
+    # Memory management
+    max_memory: "28G"
+    bpipe_memory: "24G"
+    process_samples_sequentially: true
+    
+    # JaffaL reference files
+    reference_files:
+      genome_fasta_gz: ./test_data/FILES_FOR_JAFFAL/mm39.fa.gz
+      transcriptome_fasta: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.fasta
+      annotation_bed: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.bed
+      annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab
 ```
 
 **Exon Repair Protocol:**
 ```yaml
 options:
   enable_integration: true
-  overlap_analysis_method: "exon_repair"
+  cleanup_intermediate: true
+  debug: true
   
   exon_repair:
     enabled: true
@@ -149,6 +155,8 @@ JAFFA pipeline optimized for Nanopore/PacBio long-read data using bpipe workflow
 - **Input:** FASTQ files, reference genome/transcriptome, annotation databases
 - **Process:** Assembly-based fusion detection with transcript reconstruction
 - **Tools:** Integrates Velvet/Oases assembly, Bowtie2/Minimap2 alignment, custom fusion calling
+- **Memory Management:** Configurable sequential processing to prevent memory overload on large datasets
+- **Features:** Bpipe memory allocation control, per-sample cleanup, aggressive garbage collection
 - **Output:** Combined fusion results with confidence scoring and breakpoint resolution
 - **Validation:** Cross-references with known fusion databases and genomic repeat regions
 
@@ -235,6 +243,7 @@ These files represent the final, publication-ready results with molecular-level 
 - **Path not found:** Use absolute paths in configuration
 - **Missing SAM files:** Run LongGF before Genion
 - **JaffaL setup failure:** Ensure Java 11+ is installed
+- **Out of memory errors:** Enable `process_samples_sequentially: true` for JaffaL or reduce `max_memory` settings
 
 ## Requirements
 

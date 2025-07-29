@@ -145,17 +145,17 @@ def aggregate_jaffal_results(jaffal_dir, output_dir):
     logging.info("Aggregating JaffaL results from all samples...")
     
     try:
-        # Find all .fastq.summary files in subdirectories
+        # Find all .summary files in subdirectories
         summary_files = []
         for root, dirs, files in os.walk(results_dir):
             # Only look in subdirectories (mindepth 2 equivalent)
             if root != results_dir:
                 for file in files:
-                    if file.endswith('.fastq.summary'):
+                    if file.endswith('.summary'):
                         summary_files.append(os.path.join(root, file))
         
         if not summary_files:
-            logging.warning("No .fastq.summary files found in JaffaL results")
+            logging.warning("No .summary files found in JaffaL results")
             # Create empty file
             with open(combined_file, 'w') as f:
                 f.write("")
@@ -181,7 +181,7 @@ def aggregate_jaffal_results(jaffal_dir, output_dir):
 
 
 
-def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=False):
+def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=False, config=None):
     """
     Main JaffaL execution function.
     
@@ -194,6 +194,7 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
         output_dir: Main pipeline output directory
         threads: Number of threads (for future use)
         keep_intermediate: Whether to preserve temporary files
+        config: Configuration dictionary (optional, for memory management settings)
     
     Returns:
         Dictionary with paths to generated files
@@ -201,6 +202,19 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
     logging.info("=" * 50)
     logging.info("Starting JaffaL Analysis")
     logging.info("=" * 50)
+    
+    # Extract JaffaL-specific configuration
+    jaffal_config = {}
+    if config:
+        jaffal_config = config.get('modules', {}).get('jaffal', {})
+    
+    # Memory management settings
+    process_sequentially = jaffal_config.get('process_samples_sequentially', True)
+    max_memory = jaffal_config.get('max_memory', '28G')
+    bpipe_memory = jaffal_config.get('bpipe_memory', '24G')
+    
+    logging.info(f"Processing mode: {'Sequential' if process_sequentially else 'Parallel'}")
+    logging.info(f"Memory limits: max={max_memory}, bpipe={bpipe_memory}")
     
     # Validate inputs
     if not os.path.exists(fastq_dir):
@@ -249,9 +263,40 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
         
         # Step 4: Run bpipe for each FASTA file
         sample_results = []
-        for fasta_file in fasta_files:
-            sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads)
-            sample_results.append(sample_result_dir)
+        
+        if process_sequentially:
+            # Sequential processing with memory management
+            logging.info("Processing samples sequentially for memory management")
+            for fasta_file in fasta_files:
+                try:
+                    # Clean up any previous results
+                    results_dir = os.path.join(jaffal_dir, 'results')
+                    if os.path.exists(results_dir):
+                        shutil.rmtree(results_dir)
+                    os.makedirs(results_dir)
+                    
+                    # Process single sample
+                    sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads)
+                    sample_results.append(sample_result_dir)
+                    
+                    # Clean up FASTA file after processing
+                    os.remove(fasta_file)
+                    
+                    # Force garbage collection
+                    import gc
+                    gc.collect()
+                    
+                    logging.info(f"Completed sample {Path(fasta_file).stem}, memory cleaned up")
+                    
+                except Exception as e:
+                    logging.error(f"Failed to process sample {fasta_file}: {e}")
+                    raise
+        else:
+            # Parallel processing (original behavior)
+            logging.info("Processing samples in parallel")
+            for fasta_file in fasta_files:
+                sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads)
+                sample_results.append(sample_result_dir)
         
         # Step 5: Aggregate results from all samples
         combined_results_file = aggregate_jaffal_results(jaffal_dir, jaffal_output_dir)
