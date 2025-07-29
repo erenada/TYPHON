@@ -72,9 +72,34 @@ cp config_template.yaml config.yaml
 
 **Required configuration steps:**
 1. Set correct paths for `input.fastq_dir`, `references.genome`, `references.gtf`, `references.transcriptome`
-2. Configure `jaffal.jaffal_dir` and `jaffal.reference_files` paths
+2. Configure `jaffal.jaffal_dir` and `jaffal.reference_files` paths (see [JaffaL Reference Files Setup Guide](docs/jaffal_reference_setup.md) for download instructions)
 3. Set `genion.output_bin_dir` path
 4. Adjust thread counts and memory settings for your system
+
+## JaffaL Reference Files
+
+JaffaL requires four specific reference files that must be downloaded separately from UCSC databases:
+
+1. **Genome FASTA** (`.fa.gz`) - Genomic reference sequences
+2. **Transcriptome FASTA** (`.fasta`) - Transcript sequences  
+3. **Annotation BED** (`.bed`) - Exon coordinates
+4. **Annotation TAB** (`.tab`) - Gene/transcript metadata
+
+**CRITICAL:** All files must use the **same genome build** and **annotation version** as your other reference files.
+
+### Quick Setup
+
+```bash
+# Create directory
+mkdir -p ./references/jaffal
+
+# Download files following the detailed guide
+# Update config.yaml with correct paths
+```
+
+**For complete download instructions, see: [JaffaL Reference Files Setup Guide](docs/jaffal_reference_setup.md)**
+
+This guide provides step-by-step instructions for downloading from UCSC Genome Browser and Table Browser, with specific settings for each file type.
 
 ### Complete Setup
 
@@ -141,12 +166,12 @@ modules:
     bpipe_memory: "24G"
     process_samples_sequentially: true
     
-    # JaffaL reference files
+    # JaffaL reference files (see docs/jaffal_reference_setup.md)
     reference_files:
-      genome_fasta_gz: ./test_data/FILES_FOR_JAFFAL/mm39.fa.gz
-      transcriptome_fasta: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.fasta
-      annotation_bed: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.bed
-      annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab
+      genome_fasta_gz: ./references/jaffal/mm39.fa.gz
+      transcriptome_fasta: ./references/jaffal/mm39_gencode_M28.fasta
+      annotation_bed: ./references/jaffal/mm39_gencode_M28.bed
+      annotation_tab: ./references/jaffal/mm39_gencode_M28.tab
 ```
 
 **Exon Repair Protocol:**
