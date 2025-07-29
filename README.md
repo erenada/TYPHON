@@ -341,6 +341,28 @@ These files represent the final, publication-ready results with molecular-level 
 - Ensure sufficient RAM for genome indexing and alignment steps
 - Use `process_samples_sequentially: true` for JaffaL on memory-constrained systems
 
+## Citations and References
+
+TYPHON integrates several published bioinformatics tools. Please cite the original publications when using this pipeline:
+
+### Core Tools
+
+**LongGF** (Long-read Gene Fusion detection):
+> Liu Q, Hu Y, Stucky A, Fang L, Zhong JF, Wang K. LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. BMC Genomics. 2020;21:793. doi:10.1186/s12864-020-07207-4
+
+**Genion** (Gene fusion detection for long reads):
+> Karaoglanoglu F, Chauve C, Hach F. Genion, an accurate tool to detect gene fusion from long transcriptomics reads. BMC Genomics. 2022;23:144. doi:10.1186/s12864-022-08339-5
+
+**JAFFA/JaffaL** (Fusion gene detection):
+> Davidson NM, Majewski IJ, Oshlack A. JAFFA: High sensitivity transcriptome-focused fusion gene detection. Genome Med. 2015;7:43. doi:10.1186/s13073-015-0167-x
+> 
+> Davidson NM, Chen Y, Sadras T, et al. JAFFAL: detecting fusion genes with long-read transcriptome sequencing. Genome Biol. 2022;23:10. doi:10.1186/s13059-021-02588-5
+
+### Supporting Tools
+
+**Minimap2** (Sequence alignment - used by LongGF and JaffaL):
+> Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018;34(18):3094-3100. doi:10.1093/bioinformatics/bty191
+
 ## License
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
