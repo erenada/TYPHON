@@ -28,7 +28,15 @@ JaffaL_total_chimeras <- as.data.frame(JaffaL_results$fusion_genes)
 colnames(JaffaL_total_chimeras) <- "Chimera_ID"
 # Load in the LongGF file
 print("Loading in the LongGF file")
-LongGF_result <- read.xlsx(LongGF_excel_file_path)
+# Try CSV first (faster), then Excel as fallback
+csv_path <- gsub("\\.xlsx$", ".csv", LongGF_excel_file_path)
+if (file.exists(csv_path)) {
+  print(paste("Using CSV version:", csv_path))
+  LongGF_result <- read.csv(csv_path, stringsAsFactors = FALSE)
+} else {
+  print(paste("Using Excel version:", LongGF_excel_file_path))
+  LongGF_result <- read.xlsx(LongGF_excel_file_path)
+}
 # Identify overlapping chimeras
 print("Checking for overlap between the the three sets of chimeras")
 Subset_LongGF_A <- subset(LongGF_result, LongGF_result$Chimera_ID %in% Genion_total$Chimera_ID)

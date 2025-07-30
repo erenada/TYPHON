@@ -153,8 +153,13 @@ class DataIntegrator:
 
 
     def _find_longgf_file(self) -> str:
-        """Auto-detect LongGF Excel file."""
+        """Auto-detect LongGF results file (prefer CSV, fallback to Excel)."""
         search_paths = [
+            # Try CSV first (faster)
+            os.path.join(self.output_dir, 'longgf_results', 'Combined_LongGF_chimera_results_total.csv'),
+            os.path.join(self.output_dir, 'Combined_LongGF_chimera_results_total.csv'),
+            'Combined_LongGF_chimera_results_total.csv',
+            # Fallback to Excel
             os.path.join(self.output_dir, 'longgf_results', 'Combined_LongGF_chimera_results_total.xlsx'),
             os.path.join(self.output_dir, 'Combined_LongGF_chimera_results_total.xlsx'),
             'Combined_LongGF_chimera_results_total.xlsx'
@@ -164,7 +169,7 @@ class DataIntegrator:
             if os.path.exists(path):
                 return path
         
-        raise FileNotFoundError("LongGF Excel file not found. Expected: Combined_LongGF_chimera_results_total.xlsx")
+        raise FileNotFoundError("LongGF results file not found. Expected: Combined_LongGF_chimera_results_total.csv or .xlsx")
     
     
     def _find_jaffal_file(self) -> str:
