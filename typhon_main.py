@@ -21,7 +21,48 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from typhon.modules.run_longgf import run_longgf
 from typhon.modules.run_genion import run_genion
+from typhon.modules.exon_repair import run_exon_repair
 from typhon.command_utils import setup_module_logger
+
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="TYPHON - Chimeric RNA Detection Pipeline",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run with default configuration file (config.yaml)
+  python typhon_main.py
+
+  # Run with custom configuration file
+  python typhon_main.py --config my_config.yaml
+
+  # Run with config and override threads
+  python typhon_main.py --threads 30
+
+  # Run only LongGF module
+  python typhon_main.py --modules longgf
+        """
+    )
+    
+    parser.add_argument('--config', '-c', default='config.yaml',
+                        help='YAML configuration file (default: config.yaml)')
+    parser.add_argument('--threads', '-t', type=int,
+                        help='Number of threads (overrides config)')
+    parser.add_argument('--output', '-o',
+                        help='Output directory (overrides config)')
+    parser.add_argument('--modules', nargs='+', 
+                        choices=['longgf', 'genion', 'jaffal'],
+                        help='Run specific modules only')
+    parser.add_argument('--debug', action='store_true', default=True,
+                        help='Enable debug logging (enabled by default)')
+    parser.add_argument('--no-debug', action='store_true',
+                        help='Disable debug logging')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Show what would be executed without running')
+    
+    return parser.parse_args()
 
 
 def setup_logging(log_file=None, debug=False):
@@ -262,24 +303,32 @@ def run_jaffal_step(config, longgf_excel_file=None):
         fastq_dir = config['input']['fastq_dir']
         output_dir = config['project']['output_dir']
         
-        # Find LongGF Excel file if not provided
+        # Find LongGF results file if not provided (prefer CSV, fallback to Excel)
         if not longgf_excel_file:
             longgf_results_dir = os.path.join(output_dir, 'longgf_results')
             if os.path.exists(longgf_results_dir):
-                excel_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.xlsx'))
-                if excel_files:
-                    longgf_excel_file = str(excel_files[0])
+                # Try CSV first (faster)
+                csv_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.csv'))
+                if csv_files:
+                    longgf_excel_file = str(csv_files[0])
                 else:
-                    # Try alternative locations
-                    for alt_path in ['Combined_LongGF_chimera_results_total.xlsx', 
-                                   'test_output_longgf/Combined_LongGF_chimera_results_total.xlsx',
-                                   f"{output_dir}/Combined_LongGF_chimera_results_total.xlsx"]:
-                        if os.path.exists(alt_path):
-                            longgf_excel_file = alt_path
-                            break
+                    # Fallback to Excel
+                    excel_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.xlsx'))
+                    if excel_files:
+                        longgf_excel_file = str(excel_files[0])
+                    else:
+                        # Try alternative locations (CSV first, then Excel)
+                        for basename in ['Combined_LongGF_chimera_results_total.csv', 'Combined_LongGF_chimera_results_total.xlsx']:
+                            for alt_dir in ['', 'test_output_longgf/', f"{output_dir}/"]:
+                                alt_path = alt_dir + basename
+                                if os.path.exists(alt_path):
+                                    longgf_excel_file = alt_path
+                                    break
+                            if longgf_excel_file:
+                                break
         
         if not longgf_excel_file or not os.path.exists(longgf_excel_file):
-            module_logger.error("LongGF Excel results file not found. Run LongGF first.")
+            module_logger.error("LongGF results file not found. Run LongGF first.")
             return []
         
         # Validate JaffaL installation
@@ -335,47 +384,162 @@ def main():
         # Parse command line arguments
         args = parse_args()
         
-        # Load and validate configuration
+        # Check if config file exists
+        if not os.path.exists(args.config):
+            print(f"Configuration file '{args.config}' not found. Please ensure it exists or specify a different path with --config.")
+            sys.exit(1)
+        
+        # Load configuration
         config = load_config(args.config)
         
+        # Apply command line overrides
+        if args.threads:
+            config['project']['threads'] = args.threads
+        if args.output:
+            config['project']['output_dir'] = args.output
+        
+        # Handle debug flags - --no-debug overrides --debug
+        if args.no_debug:
+            config.setdefault('options', {})['debug'] = False
+        elif args.debug:
+            config.setdefault('options', {})['debug'] = True
+        
+        # Validate configuration
+        if not validate_config(config):
+            sys.exit(1)
+        
+        # Create output directory structure
+        output_dir = config['project']['output_dir']
+        create_output_directory(output_dir)
+        
         # Set up logging
-        setup_logging(config)
+        log_file = os.path.join(output_dir, 'logs', 'typhon_main.log')
+        setup_logging(log_file=log_file, debug=config.get('options', {}).get('debug', False))
         logger = logging.getLogger(__name__)
         
-        # Create output directory
-        output_dir = config['project']['output_dir']
-        os.makedirs(output_dir, exist_ok=True)
+        # Log pipeline start
+        logger.info("=" * 60)
+        logger.info("TYPHON Pipeline Starting")
+        logger.info(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"Project: {config['project'].get('name', 'Unnamed')}")
+        logger.info(f"Output: {config['project']['output_dir']}")
+        logger.info(f"Threads: {config['project']['threads']}")
+        logger.info("=" * 60)
         
-        # Run pipeline modules
-        if config['modules']['longgf']['enabled']:
+        # Handle dry run
+        if args.dry_run:
+            logger.info("DRY RUN - Would execute the following steps:")
+            enabled_modules = []
+            if args.modules:
+                enabled_modules = args.modules
+            else:
+                for module, settings in config.get('modules', {}).items():
+                    if settings.get('enabled', False):
+                        enabled_modules.append(module)
+            
+            for module in enabled_modules:
+                logger.info(f"  - {module.upper()} analysis")
+            
+            logger.info("Use without --dry-run to actually run the pipeline")
+            return 0
+        
+        # Determine which modules to run
+        modules_to_run = args.modules or []
+        if not modules_to_run:
+            # Run all enabled modules from config
+            for module, settings in config.get('modules', {}).items():
+                if settings.get('enabled', False):
+                    modules_to_run.append(module)
+        
+        # Execute modules in order
+        sam_files = []
+        longgf_excel_file = None
+        
+        if 'longgf' in modules_to_run:
             logger.info("Running LongGF module")
-            run_longgf(config)
+            sam_files = run_longgf_step(config)
+            # Find the generated LongGF results file (prefer CSV)
+            longgf_results_dir = os.path.join(output_dir, 'longgf_results')
+            if os.path.exists(longgf_results_dir):
+                # Try CSV first
+                csv_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.csv'))
+                if csv_files:
+                    longgf_excel_file = str(csv_files[0])
+                else:
+                    # Fallback to Excel
+                    excel_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.xlsx'))
+                    if excel_files:
+                        longgf_excel_file = str(excel_files[0])
+        
+        if 'genion' in modules_to_run:
+            if not sam_files:
+                # Look for existing SAM files if LongGF wasn't run
+                sam_files = list(Path(output_dir).glob("*.sam"))
+                
+                # Also check common LongGF output locations
+                if not sam_files:
+                    for location in ['test_output_longgf', 'longgf_results', f"{output_dir}/longgf_results"]:
+                        if os.path.exists(location):
+                            sam_files = list(Path(location).glob("*.sam"))
+                            if sam_files:
+                                logger.info(f"Found existing SAM files in {location}")
+                                break
+                
+                if not sam_files:
+                    logger.error("No SAM files found for Genion. Run LongGF first or provide SAM files.")
+                    sys.exit(1)
             
-        if config['modules']['genion']['enabled']:
             logger.info("Running Genion module")
-            run_genion(config)
+            run_genion_step(config, sam_files)
             
-        if config['modules']['jaffal']['enabled']:
+        if 'jaffal' in modules_to_run:
             logger.info("Running JaffaL module")
-            run_jaffal(config)
+            run_jaffal_step(config, longgf_excel_file)
 
-        # Run exon repair if enabled
-        exon_repair_results = None
+        # Integration and exon repair (if enabled)
         if config['options'].get('enable_integration', True):
-            logger.info("Running exon repair and integration analysis")
-            exon_repair_results = postprocess(config, output_dir)
-            logger.info("Exon repair and integration analysis completed")
-        else:
-            logger.info("Integration analysis disabled, skipping exon repair")
+            integration_method = config['options'].get('overlap_analysis_method', 'exon_repair')
+            
+            if integration_method == 'exon_repair' and config['options'].get('exon_repair', {}).get('enabled', True):
+                logger.info("=" * 60)
+                logger.info("Starting Exon Repair Protocol")
+                logger.info("=" * 60)
+                
+                try:
+                    exon_repair_results = run_exon_repair(
+                        config=config,
+                        output_dir=config['project']['output_dir']
+                    )
+                    
+                    logger.info("Exon repair completed successfully")
+                    logger.info(f"High-confidence chimeras: {exon_repair_results['statistics']['total_chimeras']}")
+                    
+                except Exception as e:
+                    logger.error(f"Exon repair failed: {e}")
+                    if config['options'].get('debug', False):
+                        import traceback
+                        logger.error(traceback.format_exc())
+                    # Don't exit - allow pipeline to complete with warning
+                    logger.warning("Continuing pipeline without exon repair")
 
-        logger.info("Pipeline execution completed successfully")
+        # Pipeline completion
+        logger.info("=" * 60)
+        logger.info("TYPHON Pipeline completed successfully!")
+        logger.info(f"Results saved to: {config['project']['output_dir']}")
+        logger.info(f"Log file: {log_file}")
+        logger.info("=" * 60)
+        
         return 0
         
     except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
-        if config['options'].get('debug', False):
-            import traceback
-            logger.error(traceback.format_exc())
+        # Use basic logging if logger not initialized yet
+        try:
+            logger.error(f"Pipeline failed: {e}")
+            if config.get('options', {}).get('debug', False):
+                import traceback
+                logger.error(traceback.format_exc())
+        except NameError:
+            logging.error(f"Pipeline failed: {e}")
         return 1
 
 if __name__ == '__main__':

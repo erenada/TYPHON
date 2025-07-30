@@ -258,18 +258,18 @@ Five-phase molecular-level sequence reconstruction for chimeric RNA validation.
 ```
 results/
 ├── longgf_results/                    # LongGF outputs
-│   ├── *.sam                         # Alignment files for each sample
 │   ├── *.log                         # Detailed alignment logs
 │   ├── *_results.txt                 # Processed fusion candidates
-│   └── Combined_LongGF_chimera_results_total.xlsx  # Aggregated results
+│   ├── Combined_LongGF_chimera_results_total.xlsx  # Aggregated results (Excel)
+│   └── Combined_LongGF_chimera_results_total.csv   # Aggregated results (CSV)
+├── *.sam                             # Alignment files for each sample (main directory)
+├── *.bam                             # BAM alignment files (main directory)
 ├── genion_results/                   # Genion outputs  
 │   ├── *_genion.tsv                 # Main fusion results per sample
-│   ├── *_genion.tsv.fail            # Debug output for failed candidates
-│   └── genion_references/           # Processed reference files
+│   └── *_genion.tsv.fail            # Debug output for failed candidates
+├── genion_references/               # Processed reference files (main directory)
 ├── jaffal_results/                  # JaffaL outputs
-│   ├── jaffa_results.csv           # Primary fusion calls
-│   ├── *.fastq/                    # Per-sample bpipe output directories
-│   └── overlap_analysis.xlsx       # Cross-tool comparison results
+│   └── JaffaL_combined_results.txt # Combined fusion results from all samples
 ├── exon_repair/                     # Exon repair outputs
 │   ├── blast_results/              # BLAST analysis files
 │   ├── bed_files/                  # Breakpoint coordinate files
