@@ -65,7 +65,7 @@ def convert_fastq_to_fasta(fastq_file, output_dir):
         raise
 
 
-def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16):
+def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16, max_memory="28G"):
     """
     Run bpipe with JAFFAL.groovy for a single FASTA file.
     
@@ -76,6 +76,7 @@ def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16):
         fasta_file: Path to input FASTA file
         jaffal_dir: Path to JaffaL installation directory
         threads: Number of threads to use
+        max_memory: Maximum memory for Java process (e.g., "28G")
     
     Returns:
         Path to results directory for this sample
@@ -99,13 +100,19 @@ def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16):
         cmd = [bpipe_cmd, 'run', '-p', f'threads={threads}', jaffal_groovy, abs_fasta_file]
         logging.info(f"Running command: {' '.join(cmd)}")
         logging.info(f"Working directory: {results_dir}")
+        logging.info(f"Setting MAX_JAVA_MEM to: {max_memory}")
+        
+        # Set environment variable to override bpipe's default memory setting
+        env = os.environ.copy()
+        env['MAX_JAVA_MEM'] = max_memory
         
         result = subprocess.run(
             cmd,
             cwd=results_dir,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            env=env
         )
         
         logging.info(f"JaffaL completed for {sample_name}")
@@ -276,7 +283,7 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
                     os.makedirs(results_dir)
                     
                     # Process single sample
-                    sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads)
+                    sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, max_memory)
                     sample_results.append(sample_result_dir)
                     
                     # Clean up FASTA file after processing
@@ -295,7 +302,7 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
             # Parallel processing (original behavior)
             logging.info("Processing samples in parallel")
             for fasta_file in fasta_files:
-                sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads)
+                sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, max_memory)
                 sample_results.append(sample_result_dir)
         
         # Step 5: Aggregate results from all samples
