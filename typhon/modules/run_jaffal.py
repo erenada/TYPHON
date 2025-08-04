@@ -217,14 +217,14 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
     
     # Memory management settings
     process_sequentially = jaffal_config.get('process_samples_sequentially', True)
-    max_memory = jaffal_config.get('max_memory', '28G')
+    max_memory = jaffal_config.get('max_memory', '20G')  # Reduced to 20G
+    bpipe_memory = jaffal_config.get('bpipe_memory', '20G')  # Use bpipe_memory for Java heap
     
     # Thread configuration - use config value, fallback to parameter, then default
     config_threads = jaffal_config.get('threads', threads)
     if config_threads != threads:
         logging.info(f"Using threads from config: {config_threads} (parameter was: {threads})")
         threads = config_threads
-    bpipe_memory = jaffal_config.get('bpipe_memory', '24G')
     
     logging.info(f"Processing mode: {'Sequential' if process_sequentially else 'Parallel'}")
     logging.info(f"Memory limits: max={max_memory}, bpipe={bpipe_memory}")
@@ -290,17 +290,31 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
                     os.makedirs(results_dir)
                     
                     # Process single sample
-                    sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, max_memory)
+                    sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, bpipe_memory)
                     sample_results.append(sample_result_dir)
                     
                     # Clean up FASTA file after processing
                     os.remove(fasta_file)
                     
-                    # Force garbage collection
+                    # Force garbage collection and cleanup
                     import gc
+                    import time
                     gc.collect()
                     
-                    logging.info(f"Completed sample {Path(fasta_file).stem}, memory cleaned up")
+                    # Kill any lingering Java processes from bpipe
+                    subprocess.run(['pkill', '-f', 'bpipe'], capture_output=True)
+                    subprocess.run(['pkill', '-f', 'java.*bpipe'], capture_output=True)
+                    
+                    # Brief pause to ensure cleanup
+                    time.sleep(2)
+                    
+                    # Check memory status after cleanup
+                    try:
+                        import psutil
+                        memory_info = psutil.virtual_memory()
+                        logging.info(f"Completed sample {Path(fasta_file).stem} - Available memory: {memory_info.available / (1024**3):.1f}GB")
+                    except ImportError:
+                        logging.info(f"Completed sample {Path(fasta_file).stem}, memory and processes cleaned up")
                     
                 except Exception as e:
                     logging.error(f"Failed to process sample {fasta_file}: {e}")
@@ -309,7 +323,7 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
             # Parallel processing (original behavior)
             logging.info("Processing samples in parallel")
             for fasta_file in fasta_files:
-                sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, max_memory)
+                sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, bpipe_memory)
                 sample_results.append(sample_result_dir)
         
         # Step 5: Aggregate results from all samples
