@@ -424,9 +424,6 @@ def process_reference_files(jaffal_dir, reference_files_dir, genome_build, annot
             subprocess.run([
                 'makeblastdb',
                 '-in', transcriptome_output,
-                '-parse_seqids',
-                '-blastdb_version', '5',
-                '-title', blast_title,
                 '-dbtype', 'nucl',
                 '-out', blast_db_name
             ], check=True)
