@@ -65,7 +65,7 @@ def convert_fastq_to_fasta(fastq_file, output_dir):
         raise
 
 
-def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16, max_memory="28G"):
+def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16, max_memory="24G"):
     """
     Run bpipe with JAFFAL.groovy for a single FASTA file.
     
@@ -218,10 +218,17 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
     # Memory management settings
     process_sequentially = jaffal_config.get('process_samples_sequentially', True)
     max_memory = jaffal_config.get('max_memory', '28G')
+    
+    # Thread configuration - use config value, fallback to parameter, then default
+    config_threads = jaffal_config.get('threads', threads)
+    if config_threads != threads:
+        logging.info(f"Using threads from config: {config_threads} (parameter was: {threads})")
+        threads = config_threads
     bpipe_memory = jaffal_config.get('bpipe_memory', '24G')
     
     logging.info(f"Processing mode: {'Sequential' if process_sequentially else 'Parallel'}")
     logging.info(f"Memory limits: max={max_memory}, bpipe={bpipe_memory}")
+    logging.info(f"Thread configuration: {threads}")
     
     # Validate inputs
     if not os.path.exists(fastq_dir):
