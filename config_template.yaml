@@ -35,7 +35,7 @@ modules:
   # LongGF MODULE: Direct RNA-seq fusion detection
   # ---------------------------------------------------------------------------
   longgf:
-    enabled: false                              # Enable/disable LongGF analysis
+    enabled: true                              # Enable/disable LongGF analysis
     keep_intermediate: false                    # Keep intermediate BAM/SAM files
     
     # Core LongGF parameters (command: LongGF input.bam gtf.gtf 100 50 100 2 0 1 0)
@@ -51,12 +51,12 @@ modules:
   # GENION MODULE: Graph-based fusion detection with custom TYPHON enhancements
   # ---------------------------------------------------------------------------
   genion:
-    enabled: false                             # Enable/disable Genion analysis
+    enabled: true                             # Enable/disable Genion analysis
     min_support: 1                             # Minimum supporting reads (--min-support parameter)
     keep_debug: true                           # Keep .fail files with detailed debug information
     output_bin_dir: ./bin                      # Directory containing custom Genion binary
     debug_compilation: true                     # Compile Genion with debug flags for detailed output
-    threads: 4                                 # Compilation threads (Genion itself is single-threaded)
+    threads: 20                                 # Compilation threads (Genion itself is single-threaded)
     
     # Advanced Genion parameters (currently hardcoded, future expansion)
     # genomic_superdups_file: ""               # Path to genomic segmental duplications file (optional)
@@ -66,14 +66,14 @@ modules:
   # JAFFAL MODULE: JAFFA-Long pipeline for Nanopore/PacBio data
   # ---------------------------------------------------------------------------
   jaffal:
-    enabled: false                             # Enable/disable JaffaL analysis
+    enabled: true                             # Enable/disable JaffaL analysis
     jaffal_dir: ./jaffal/JAFFA-version-2.3     # JaffaL installation directory (absolute path)
     genome_build: mm39                         # Genome build identifier (mm39, hg38, etc.)
     annotation: gencode_M28                    # Annotation build identifier
     
     # Memory management
-    max_memory: "28G"                         # Maximum memory for JaffaL processes (90% of available RAM)
-    bpipe_memory: "24G"                       # Memory allocation for bpipe
+    max_memory: "20G"                         # Maximum memory for JaffaL processes (conservative)
+    bpipe_memory: "20G"                       # Memory allocation for bpipe Java heap
     process_samples_sequentially: true        # Process one sample at a time to manage memory usage
     
     # Reference files for JaffaL (processed by setup_jaffal.py)
@@ -84,7 +84,7 @@ modules:
       annotation_tab: ./test_data/FILES_FOR_JAFFAL/mm39_gencode_M28.tab           # Tab-delimited gene info
     
     # JaffaL execution parameters
-    threads: 16                                # Number of threads for bpipe/JaffaL execution
+    threads: 20                                # Number of threads for bpipe/JaffaL execution
     keep_intermediate: false                   # Keep intermediate bpipe files
     min_low_spanning_reads: 1                  # Minimum spanning reads for low-confidence fusions
     
