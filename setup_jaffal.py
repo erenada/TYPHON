@@ -42,6 +42,13 @@ def check_dependencies():
     """Check that required dependencies are available."""
     logging.info("Checking dependencies...")
     
+    # Check if typhon_env is activated
+    conda_env = os.environ.get('CONDA_DEFAULT_ENV')
+    if conda_env != 'typhon_env':
+        logging.error(f"Wrong conda environment: {conda_env}")
+        logging.error("Please activate typhon_env: conda activate typhon_env")
+        return False
+    
     # Required conda tools that should already be installed
     # Note: bpipe is installed via JaffaL's install_linux64.sh, not conda
     conda_tools = [
@@ -54,11 +61,11 @@ def check_dependencies():
         result = subprocess.run(['which', tool], capture_output=True, text=True)
         if result.returncode != 0:
             missing_tools.append(tool)
+            logging.warning(f"Tool '{tool}' not found in PATH")
     
     if missing_tools:
         logging.error(f"Missing required tools: {missing_tools}")
-        logging.error("Please ensure you've activated the typhon_env conda environment")
-        logging.error("Run: conda activate typhon_env")
+        logging.error("Try reinstalling them: conda install -c bioconda " + " ".join(missing_tools))
         return False
     
     # Check Java
