@@ -174,10 +174,11 @@ def run_jaffal_installer(jaffal_path):
         # Change to JaffaL directory (required for install script)
         os.chdir(jaffal_path)
         
-        # Run the installation script
+        # Run the installation script with automatic "yes" responses
         logging.info("Executing install_linux64.sh...")
         result = subprocess.run(['bash', 'install_linux64.sh'], 
-                              capture_output=True, text=True, check=True)
+                              input='A\nA\nA\nA\nA\nA\nA\nA\nA\nA\n', 
+                              text=True, check=True)
         
         logging.info("JaffaL installation completed successfully")
         logging.debug(f"Install output: {result.stdout}")
