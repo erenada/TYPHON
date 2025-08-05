@@ -43,8 +43,9 @@ def check_dependencies():
     logging.info("Checking dependencies...")
     
     # Required conda tools that should already be installed
+    # Note: bpipe is installed via JaffaL's install_linux64.sh, not conda
     conda_tools = [
-        'trimmomatic', 'velveth', 'velvetg', 'oases', 'blat', 'bpipe',
+        'trimmomatic', 'velveth', 'velvetg', 'oases', 'blat',
         'bowtie2', 'bowtie2-build', 'samtools', 'minimap2', 'blastn'
     ]
     
@@ -123,7 +124,7 @@ def create_tools_groovy(jaffal_path):
 // Uses conda-installed tools from: {conda_env}
 
 // Core bioinformatics tools (conda-installed)
-bpipe="{bin_path}/bpipe"
+// Note: bpipe uses bundled JaffaL-compatible version, not conda
 velveth="{bin_path}/velveth"
 velvetg="{bin_path}/velvetg"
 oases="{bin_path}/oases"
@@ -151,58 +152,96 @@ make_3_gene_fusion_table=codeBase+"/tools/bin/make_3_gene_fusion_table"
     logging.info(f"Created {tools_groovy_path}")
 
 
-def compile_custom_tools(jaffal_path):
-    """Compile JaffaL custom C++ tools."""
-    logging.info("Compiling JaffaL custom tools...")
+def run_jaffal_installer(jaffal_path):
+    """Run the official JaffaL install_linux64.sh script."""
+    logging.info("Running official JaffaL installation script...")
+    
+    install_script = os.path.join(jaffal_path, "install_linux64.sh")
+    
+    if not os.path.exists(install_script):
+        raise FileNotFoundError(f"JaffaL installation script not found: {install_script}")
+    
+    # Save current directory
+    original_cwd = os.getcwd()
+    
+    try:
+        # Change to JaffaL directory (required for install script)
+        os.chdir(jaffal_path)
+        
+        # Run the installation script
+        logging.info("Executing install_linux64.sh...")
+        result = subprocess.run(['bash', 'install_linux64.sh'], 
+                              capture_output=True, text=True, check=True)
+        
+        logging.info("JaffaL installation completed successfully")
+        logging.debug(f"Install output: {result.stdout}")
+        
+        # Verify critical components are installed
+        tools_bin_dir = os.path.join(jaffal_path, "tools", "bin")
+        expected_tools = ["bpipe", "make_3_gene_fusion_table", "extract_seq_from_fasta"]
+        
+        missing_tools = []
+        for tool in expected_tools:
+            tool_path = os.path.join(tools_bin_dir, tool)
+            if not os.path.exists(tool_path):
+                missing_tools.append(tool)
+        
+        if missing_tools:
+            logging.warning(f"Some tools missing after installation: {missing_tools}")
+        else:
+            logging.info("All expected tools installed successfully")
+            
+    except subprocess.CalledProcessError as e:
+        logging.error(f"JaffaL installation failed: {e}")
+        logging.error(f"stdout: {e.stdout}")
+        logging.error(f"stderr: {e.stderr}")
+        raise
+    finally:
+        # Always restore original directory
+        os.chdir(original_cwd)
+
+
+def verify_jaffal_installation(jaffal_path):
+    """Verify that JaffaL installation is complete and functional."""
+    logging.info("Verifying JaffaL installation...")
     
     tools_bin_dir = os.path.join(jaffal_path, "tools", "bin")
-    src_dir = os.path.join(jaffal_path, "src")
     
-    os.makedirs(tools_bin_dir, exist_ok=True)
-    
-    # Create symbolic link to bundled bpipe (JaffaL-compatible version)
-    bundled_bpipe_dir = os.path.join(jaffal_path, "tools", "bpipe-0.9.9.2")
-    bundled_bpipe = os.path.join(bundled_bpipe_dir, "bin", "bpipe")
-    local_bpipe = os.path.join(tools_bin_dir, "bpipe")
-    
-    if os.path.exists(bundled_bpipe) and not os.path.exists(local_bpipe):
-        os.symlink(bundled_bpipe, local_bpipe)
-        logging.info(f"Created symlink: {local_bpipe} -> {bundled_bpipe}")
-    elif not os.path.exists(bundled_bpipe):
-        logging.error(f"Bundled bpipe not found at {bundled_bpipe}")
-        logging.error("JAFFA installation may be incomplete")
-    elif os.path.exists(local_bpipe):
-        logging.info(f"bpipe symlink already exists at {local_bpipe}")
-    
-    # List of custom tools to compile
-    tools = [
-        "make_3_gene_fusion_table",
-        "extract_seq_from_fasta", 
+    # Check that critical tools exist
+    critical_tools = [
+        "bpipe",
+        "make_3_gene_fusion_table", 
+        "extract_seq_from_fasta",
         "make_simple_read_table",
         "process_transcriptome_align_table"
     ]
     
-    for tool in tools:
-        src_file = os.path.join(src_dir, f"{tool}.c++")
-        bin_file = os.path.join(tools_bin_dir, tool)
+    missing_tools = []
+    working_tools = []
+    
+    for tool in critical_tools:
+        tool_path = os.path.join(tools_bin_dir, tool)
         
-        if os.path.exists(bin_file):
-            logging.info(f"{tool} already compiled")
-            continue
-            
-        if not os.path.exists(src_file):
-            logging.warning(f"Source file not found: {src_file}")
-            continue
-            
-        logging.info(f"Compiling {tool}...")
-        try:
-            subprocess.run([
-                'g++', '-std=c++11', '-O3', '-o', bin_file, src_file
-            ], check=True)
-            logging.info(f"Successfully compiled {tool}")
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to compile {tool}: {e}")
-            raise
+        if os.path.exists(tool_path):
+            # Check if it's executable
+            if os.access(tool_path, os.X_OK):
+                working_tools.append(tool)
+                logging.debug(f"✓ {tool} found and executable")
+            else:
+                logging.warning(f"⚠ {tool} found but not executable: {tool_path}")
+                missing_tools.append(f"{tool} (not executable)")
+        else:
+            missing_tools.append(tool)
+            logging.warning(f"✗ {tool} not found: {tool_path}")
+    
+    # Report results
+    if not missing_tools:
+        logging.info(f"✓ All {len(critical_tools)} critical tools installed successfully")
+        return True
+    else:
+        logging.error(f"✗ Missing tools: {missing_tools}")
+        logging.error("JaffaL installation appears incomplete")
+        return False
 
 
 def apply_typhon_modifications(jaffal_path, min_low_spanning_reads=1):
@@ -509,8 +548,13 @@ Examples:
         # Download and extract JaffaL
         jaffal_path = download_jaffal(args.jaffal_dir)
         
-        # Compile custom tools
-        compile_custom_tools(jaffal_path)
+        # Run official JaffaL installation (includes bpipe and custom tools)
+        run_jaffal_installer(jaffal_path)
+        
+        # Verify installation completed successfully
+        if not verify_jaffal_installation(jaffal_path):
+            logging.error("JaffaL installation verification failed")
+            sys.exit(1)
         
         # Determine reference file processing parameters
         # Command line arguments override config.yaml

@@ -40,5 +40,5 @@ dependencies:
   - velvet         # Includes velveth and velvetg
   - oases          # Transcriptome assembler (depends on velvet)
   - blat           # Sequence alignment tool
-  - bpipe          # Build system used by JaffaL
+
   - bbmap          # Includes dedupe, reformat, and other tools 
