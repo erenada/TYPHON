@@ -160,6 +160,20 @@ def compile_custom_tools(jaffal_path):
     
     os.makedirs(tools_bin_dir, exist_ok=True)
     
+    # Create symbolic link to bundled bpipe (JaffaL-compatible version)
+    bundled_bpipe_dir = os.path.join(jaffal_path, "tools", "bpipe-0.9.9.2")
+    bundled_bpipe = os.path.join(bundled_bpipe_dir, "bin", "bpipe")
+    local_bpipe = os.path.join(tools_bin_dir, "bpipe")
+    
+    if os.path.exists(bundled_bpipe) and not os.path.exists(local_bpipe):
+        os.symlink(bundled_bpipe, local_bpipe)
+        logging.info(f"Created symlink: {local_bpipe} -> {bundled_bpipe}")
+    elif not os.path.exists(bundled_bpipe):
+        logging.error(f"Bundled bpipe not found at {bundled_bpipe}")
+        logging.error("JAFFA installation may be incomplete")
+    elif os.path.exists(local_bpipe):
+        logging.info(f"bpipe symlink already exists at {local_bpipe}")
+    
     # List of custom tools to compile
     tools = [
         "make_3_gene_fusion_table",
