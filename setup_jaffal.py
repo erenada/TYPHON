@@ -161,6 +161,12 @@ def run_jaffal_installer(jaffal_path):
     if not os.path.exists(install_script):
         raise FileNotFoundError(f"JaffaL installation script not found: {install_script}")
     
+    # Clean up any existing tools/bin directory to avoid conflicts
+    tools_bin_dir = os.path.join(jaffal_path, "tools", "bin")
+    if os.path.exists(tools_bin_dir):
+        logging.info("Cleaning up existing tools/bin directory...")
+        shutil.rmtree(tools_bin_dir)
+    
     # Save current directory
     original_cwd = os.getcwd()
     
