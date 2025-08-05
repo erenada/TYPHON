@@ -160,22 +160,6 @@ def compile_custom_tools(jaffal_path):
     
     os.makedirs(tools_bin_dir, exist_ok=True)
     
-    # Create symbolic link for bpipe from conda environment
-    conda_env = os.environ.get('CONDA_PREFIX')
-    if conda_env:
-        conda_bpipe = os.path.join(conda_env, 'bin', 'bpipe')
-        local_bpipe = os.path.join(tools_bin_dir, 'bpipe')
-        
-        if os.path.exists(conda_bpipe) and not os.path.exists(local_bpipe):
-            os.symlink(conda_bpipe, local_bpipe)
-            logging.info(f"Created symlink: {local_bpipe} -> {conda_bpipe}")
-        elif not os.path.exists(conda_bpipe):
-            logging.warning(f"Conda bpipe not found at {conda_bpipe}")
-        elif os.path.exists(local_bpipe):
-            logging.info(f"bpipe symlink already exists at {local_bpipe}")
-    else:
-        logging.warning("CONDA_PREFIX not set, cannot create bpipe symlink")
-    
     # List of custom tools to compile
     tools = [
         "make_3_gene_fusion_table",
