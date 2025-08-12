@@ -100,6 +100,8 @@ class BlastSetupProcessor:
         samtools fasta collated.sam > sequences.fa
         seqkit sort sequences.fa > sorted.fa
         seqkit rmdup -n sorted.fa > final.fa
+        
+        If multiple BAM files exist, they are merged first to match original workflow.
         """
         self.logger.info("Step 2.1: BAM to FASTA extraction...")
         
@@ -108,9 +110,13 @@ class BlastSetupProcessor:
         if not bam_files:
             raise FileNotFoundError("No BAM files found for sequence extraction")
         
-        # Use first BAM file (or merge if multiple - for now use first)
-        bam_file = bam_files[0]
-        self.logger.info(f"Using BAM file: {bam_file}")
+        # Merge BAM files if multiple exist (matches original workflow)
+        if len(bam_files) > 1:
+            bam_file = self._merge_bam_files(bam_files)
+            self.logger.info(f"Merged {len(bam_files)} BAM files into: {bam_file}")
+        else:
+            bam_file = bam_files[0]
+            self.logger.info(f"Using single BAM file: {bam_file}")
         
         # Read IDs file from Phase 1
         read_ids_file = os.path.join(self.work_dir, 'all_chimera_read_ids.txt')
@@ -198,6 +204,52 @@ class BlastSetupProcessor:
         
         self.logger.info(f"Found {len(bam_files)} BAM files: {bam_files}")
         return bam_files
+
+
+    def _merge_bam_files(self, bam_files: list) -> str:
+        """
+        Merge multiple BAM files into a single merged BAM file.
+        
+        Implements the original workflow's use of a merged BAM file containing
+        all samples, which is essential for multi-sample exon repair.
+        
+        Args:
+            bam_files: List of BAM file paths to merge
+            
+        Returns:
+            str: Path to merged BAM file
+        """
+        merged_bam_unsorted = os.path.join(self.work_dir, 'merged_samples_unsorted.bam')
+        merged_bam = os.path.join(self.work_dir, 'merged_samples.bam')
+        
+        try:
+            # Step 1: Use samtools merge to combine all BAM files
+            cmd_merge = ['samtools', 'merge', '-@', str(self.threads), merged_bam_unsorted] + bam_files
+            self.logger.info(f"Merging BAM files: {' '.join(cmd_merge)}")
+            subprocess.run(cmd_merge, check=True, capture_output=True, text=True)
+            
+            # Step 2: Sort the merged BAM file (required for indexing)
+            cmd_sort = ['samtools', 'sort', '-@', str(self.threads), '-o', merged_bam, merged_bam_unsorted]
+            self.logger.info(f"Sorting merged BAM: {' '.join(cmd_sort)}")
+            subprocess.run(cmd_sort, check=True, capture_output=True, text=True)
+            
+            # Step 3: Index the sorted merged BAM file
+            cmd_index = ['samtools', 'index', merged_bam]
+            self.logger.info(f"Indexing sorted merged BAM: {' '.join(cmd_index)}")
+            subprocess.run(cmd_index, check=True, capture_output=True, text=True)
+            
+            # Clean up intermediate unsorted file
+            if os.path.exists(merged_bam_unsorted):
+                os.remove(merged_bam_unsorted)
+            
+            self.logger.info(f"Successfully merged, sorted, and indexed {len(bam_files)} BAM files into: {merged_bam}")
+            return merged_bam
+            
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"BAM file merging/sorting failed: {e}")
+            if e.stderr:
+                self.logger.error(f"Error details: {e.stderr}")
+            raise
 
 
     def _prepare_blast_database(self) -> str:

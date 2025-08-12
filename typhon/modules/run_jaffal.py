@@ -281,16 +281,24 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
         if process_sequentially:
             # Sequential processing with memory management
             logging.info("Processing samples sequentially for memory management")
+            all_sample_results = []  # Store all results before combining
+            
             for fasta_file in fasta_files:
                 try:
-                    # Clean up any previous results
-                    results_dir = os.path.join(jaffal_dir, 'results')
-                    if os.path.exists(results_dir):
-                        shutil.rmtree(results_dir)
-                    os.makedirs(results_dir)
-                    
                     # Process single sample
                     sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, bpipe_memory)
+                    
+                    # Save this sample's results before next iteration
+                    sample_name = os.path.basename(fasta_file).replace('.fasta', '')
+                    logging.info(f"Preserving results for {sample_name}")
+                    
+                    # Copy .summary files to temporary location
+                    results_dir = os.path.join(jaffal_dir, 'results')
+                    temp_results_dir = os.path.join(jaffal_dir, f'temp_results_{sample_name}')
+                    if os.path.exists(results_dir):
+                        shutil.copytree(results_dir, temp_results_dir, dirs_exist_ok=True)
+                        all_sample_results.append(temp_results_dir)
+                    
                     sample_results.append(sample_result_dir)
                     
                     # Clean up FASTA file after processing
@@ -325,8 +333,34 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
             for fasta_file in fasta_files:
                 sample_result_dir = run_bpipe_jaffal(fasta_file, jaffal_dir, threads, bpipe_memory)
                 sample_results.append(sample_result_dir)
+                
+                # Clean up FASTA file after processing (consistent with sequential)
+                os.remove(fasta_file)
         
         # Step 5: Aggregate results from all samples
+        logging.info("Aggregating JaffaL results from all samples...")
+        
+        # If we processed sequentially, restore all results before aggregation
+        if process_sequentially and 'all_sample_results' in locals() and all_sample_results:
+            # Restore all sample results to the main results directory
+            main_results_dir = os.path.join(jaffal_dir, 'results')
+            if os.path.exists(main_results_dir):
+                shutil.rmtree(main_results_dir)
+            os.makedirs(main_results_dir)
+            
+            for temp_dir in all_sample_results:
+                if os.path.exists(temp_dir):
+                    # Copy contents to main results directory
+                    for item in os.listdir(temp_dir):
+                        src = os.path.join(temp_dir, item)
+                        dst = os.path.join(main_results_dir, item)
+                        if os.path.isdir(src):
+                            shutil.copytree(src, dst, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(src, dst)
+                    # Clean up temporary directory
+                    shutil.rmtree(temp_dir)
+        
         combined_results_file = aggregate_jaffal_results(jaffal_dir, jaffal_output_dir)
         
         logging.info("=" * 50)

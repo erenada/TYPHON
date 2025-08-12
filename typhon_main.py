@@ -184,11 +184,13 @@ def run_longgf_step(config):
     longgf_config = config.get('modules', {}).get('longgf', {})
     
     try:
+        # Use longgf_results subdirectory
+        longgf_output_dir = os.path.join(config['project']['output_dir'], 'longgf_results')
         results = run_longgf(
             fastq_dir=config['input']['fastq_dir'],
             genome=config['references']['genome'],
             gtf=config['references']['gtf'],
-            output_dir=config['project']['output_dir'],
+            output_dir=longgf_output_dir,
             threads=config['project'].get('threads', 4),
             keep_intermediate=longgf_config.get('keep_intermediate', False),
             min_overlap_len=longgf_config.get('min_overlap_len', 100),
@@ -459,17 +461,26 @@ def main():
             logger.info("Running LongGF module")
             sam_files = run_longgf_step(config)
             # Find the generated LongGF results file (prefer CSV)
-            longgf_results_dir = os.path.join(output_dir, 'longgf_results')
-            if os.path.exists(longgf_results_dir):
-                # Try CSV first
-                csv_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.csv'))
-                if csv_files:
-                    longgf_excel_file = str(csv_files[0])
-                else:
+            # Search in multiple locations in order of preference
+            search_locations = [
+                os.path.join(output_dir, 'longgf_results'),  # Primary location
+                output_dir,  # Fallback for backward compatibility
+                'test_output_longgf'  # Legacy location
+            ]
+            
+            for location in search_locations:
+                if os.path.exists(location):
+                    # Try CSV first (faster)
+                    csv_files = list(Path(location).glob('Combined_LongGF_chimera_results_total.csv'))
+                    if csv_files:
+                        longgf_excel_file = str(csv_files[0])
+                        break
+                    
                     # Fallback to Excel
-                    excel_files = list(Path(longgf_results_dir).glob('Combined_LongGF_chimera_results_total.xlsx'))
+                    excel_files = list(Path(location).glob('Combined_LongGF_chimera_results_total.xlsx'))
                     if excel_files:
                         longgf_excel_file = str(excel_files[0])
+                        break
         
         if 'genion' in modules_to_run:
             if not sam_files:

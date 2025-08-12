@@ -134,6 +134,17 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
             longgf_cmd = f"LongGF {output_sorted_bam} {gtf_path} {min_overlap_len} {bin_size} {min_map_len} {pseudogene} {secondary_alignment} {min_sup_read} {output_flag} > {output_longgf_total}"
             run_command(longgf_cmd)
             
+            # 5. Process LongGF output exactly as in the original pipeline
+            log("Processing LongGF output...")
+            run_command(f"sed -n '/GF/,/SumGF/p' {output_longgf_total} > {os.path.join(output_dir, f'{filename}_mod5.txt')}")
+            run_command(f"grep -v 'SumGF' {os.path.join(output_dir, f'{filename}_mod5.txt')} > {os.path.join(output_dir, f'{filename}_mod4.txt')}")
+            run_command(f"awk '/^GF/ {{printf \"%s%s \", mypfx, $0; mypfx=\"\\n\"; next}} {{printf \"%s\", $0}} END {{print \" \"}}' {os.path.join(output_dir, f'{filename}_mod4.txt')} > {os.path.join(output_dir, f'{filename}_mod3.txt')}")
+            run_command(f"sed 's:^.\\{{3\\}}::g' {os.path.join(output_dir, f'{filename}_mod3.txt')} > {os.path.join(output_dir, f'{filename}_mod2.txt')}")
+            run_command(f"tr ' ' ',' < {os.path.join(output_dir, f'{filename}_mod2.txt')} > {os.path.join(output_dir, f'{filename}_mod1.txt')}")
+            run_command(f"tr '\\t' ',' < {os.path.join(output_dir, f'{filename}_mod1.txt')} > {os.path.join(output_dir, f'{filename}_mod.txt')}")
+            run_command(f"cut -d ',' -f1,2,13,14- {os.path.join(output_dir, f'{filename}_mod.txt')} > {os.path.join(output_dir, f'{filename}_modlast.txt')}")
+            run_command(f"sed '$s/,$//' {os.path.join(output_dir, f'{filename}_modlast.txt')} > {os.path.join(output_dir, f'{filename}_results.txt')}")
+            
             processed_samples.append({
                 'sample': filename,
                 'sam_file': output_unsorted_sam,
