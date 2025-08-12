@@ -10,18 +10,17 @@
 
 ## Overview
 
-TYPHON is a comprehensive modular bioinformatics pipeline designed for robust chimeric RNA detection from long-read RNA sequencing data (Nanopore/PacBio). The pipeline integrates multiple complementary fusion detection tools—LongGF, custom Genion, and JaffaL—followed by a sophisticated five-phase exon repair protocol for molecular-level sequence validation.
+TYPHON is a comprehensive pipeline for chimeric RNA detection from long-read sequencing data (Nanopore/PacBio). It integrates three complementary fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for molecular-level sequence validation.
 
 **Key Features:**
-- **Multi-tool integration:** Combines three fusion detection algorithms for comprehensive coverage
-- **Long-read optimized:** Specifically designed for Nanopore and PacBio sequencing technologies
-- **Molecular validation:** Advanced exon repair protocol reconstructs complete chimeric sequences with precise breakpoints
-- **Memory management:** Configurable processing modes to handle large datasets efficiently
-- **High-confidence results:** Cross-validation between tools and BLAST-based filtering ensures reliable fusion calls
+- **Multi-tool integration** - Combines three fusion detection algorithms
+- **Long-read optimized** - Designed for Nanopore and PacBio technologies  
+- **Molecular validation** - Reconstructs complete chimeric sequences with precise breakpoints
+- **High-confidence results** - Cross-validation and BLAST-based filtering
 
 ## About the Name
 
-TYPHON is named after [Typhon](https://en.wikipedia.org/wiki/Typhon), the monstrous father of the Chimera in Greek mythology. According to Hesiod, Typhon and Echidna were the parents of the [Chimera](https://en.wikipedia.org/wiki/Chimera_(mythology))—a fire-breathing hybrid creature composed of different animal parts. The name reflects this pipeline's purpose: detecting and analyzing chimeric RNA molecules, which are hybrid transcripts formed by the fusion of different genes, much like the mythological chimera combines parts from different creatures.
+TYPHON is named after the mythological father of the Chimera. Like the mythological chimera that combines parts from different creatures, this pipeline detects chimeric RNA molecules formed by the fusion of different genes.
 
 ## Installation
 
@@ -69,42 +68,27 @@ conda activate typhon_env
 
 **IMPORTANT:** Configure the pipeline before running setup scripts, as they read paths from the configuration file.
 
-Copy and edit the configuration template:
 ```bash
+# Copy template and edit with your specific paths
 cp config_template.yaml config.yaml
 # Edit config.yaml with your data paths and settings
 ```
 
-**Required configuration steps:**
-1. Set correct paths for `input.fastq_dir`, `references.genome`, `references.gtf`, `references.transcriptome`
-2. Configure `jaffal.jaffal_dir` and `jaffal.reference_files` paths (see [JaffaL Reference Files Setup Guide](docs/jaffal_reference_setup.md) for download instructions)
-3. Set `genion.output_bin_dir` path
-4. Adjust thread counts and memory settings for your system
+**Essential setup:**
+1. Update file paths in `references:` section (genome, GTF, transcriptome)
+2. Set input FASTQ directory path
+3. Configure JaffaL reference files (see [JaffaL Reference Setup Guide](docs/jaffal_reference_setup.md))
+4. Adjust thread counts and memory for your system
+
+**For detailed configuration options, see: [Configuration Guide](docs/configuration.md)**
 
 ## JaffaL Reference Files
 
-JaffaL requires four specific reference files that must be downloaded separately from UCSC databases:
-
-1. **Genome FASTA** (`.fa.gz`) - Genomic reference sequences
-2. **Transcriptome FASTA** (`.fasta`) - Transcript sequences  
-3. **Annotation BED** (`.bed`) - Exon coordinates
-4. **Annotation TAB** (`.tab`) - Gene/transcript metadata
+JaffaL requires four specific reference files from UCSC databases: genome FASTA (`.fa.gz`), transcriptome FASTA (`.fasta`), annotation BED (`.bed`), and annotation TAB (`.tab`).
 
 **CRITICAL:** All files must use the **same genome build** and **annotation version** as your other reference files.
 
-### Quick Setup
-
-```bash
-# Create directory
-mkdir -p ./references/jaffal
-
-# Download files following the detailed guide
-# Update config.yaml with correct paths
-```
-
 **For complete download instructions, see: [JaffaL Reference Files Setup Guide](docs/jaffal_reference_setup.md)**
-
-This guide provides step-by-step instructions for downloading from UCSC Genome Browser and Table Browser, with specific settings for each file type.
 
 ### Complete Setup
 
@@ -121,69 +105,6 @@ python setup_jaffal.py
 java -version           # Should show Java 11+
 conda run -n typhon_env which minimap2 longgf samtools
 conda run -n typhon_env rename --man | head -5  # Check rename utility
-```
-
-## Configuration Reference
-
-### Key Configuration Sections
-
-**Input/Output:**
-```yaml
-project:
-  name: Your_Analysis_Name
-  output_dir: ./results
-  threads: 20
-
-input:
-  fastq_dir: ./data/fastq_files
-
-references:
-  genome: ./references/genome.fa
-  gtf: ./references/annotation.gtf
-  transcriptome: ./references/transcripts.fa
-```
-
-**Pipeline Modules:**
-```yaml
-modules:
-  longgf:
-    enabled: true
-    min_overlap_len: 100
-    
-  genion:
-    enabled: true
-    min_support: 1
-    keep_debug: true
-    
-  jaffal:
-    enabled: true
-    jaffal_dir: ./jaffal/JAFFA-version-2.3
-    
-    # Memory management
-    max_memory: "28G"
-    bpipe_memory: "24G"
-    process_samples_sequentially: true
-    
-    # JaffaL reference files (see docs/jaffal_reference_setup.md)
-    reference_files:
-      genome_fasta_gz: ./references/jaffal/mm39.fa.gz
-      transcriptome_fasta: ./references/jaffal/mm39_gencode_M28.fasta
-      annotation_bed: ./references/jaffal/mm39_gencode_M28.bed
-      annotation_tab: ./references/jaffal/mm39_gencode_M28.tab
-```
-
-**Exon Repair Protocol:**
-```yaml
-options:
-  enable_integration: true
-  cleanup_intermediate: true
-  debug: true
-  
-  exon_repair:
-    enabled: true
-    keep_intermediate: true
-    blast_threads: 20
-    min_blast_identity: 80
 ```
 
 ## Usage
@@ -218,96 +139,72 @@ python typhon_main.py --dry-run
 ## Pipeline Modules
 
 ### LongGF
-Direct RNA-seq fusion detection using long-read alignments with minimap2.
-- **Input:** FASTQ files, genome FASTA, GTF annotation
-- **Process:** Aligns reads to genome, identifies fusion candidates through split alignments
-- **Parameters:** Configurable overlap length (100bp default), pseudogene filtering, minimum support reads
-- **Output:** SAM alignments, Excel/CSV fusion results with read-level evidence
-- **Post-processing:** R-based result aggregation and chimera classification
+Direct RNA-seq fusion detection using minimap2 alignments. Identifies fusion candidates through split alignments with configurable overlap thresholds and pseudogene filtering.
 
 ### Custom Genion
-Graph-based fusion detection with TYPHON-specific enhancements and debug output.
-- **Input:** FASTQ files, SAM alignments (from LongGF), processed reference transcriptome
-- **Process:** Builds splice graphs, detects fusion events using custom binary with enhanced logging
-- **Features:** Self-alignment PAF generation, TSV-formatted detailed output, failure analysis (.fail files)
-- **Output:** TSV fusion results with read-level detail, comprehensive debug information
-- **Integration:** Custom compilation with debug flags for detailed fusion characterization
+Graph-based fusion detection with TYPHON-specific enhancements. Builds splice graphs from SAM alignments with enhanced debug output and failure analysis.
 
 ### JaffaL (JAFFA-Long)
-JAFFA pipeline optimized for Nanopore/PacBio long-read data using bpipe workflow.
-- **Input:** FASTQ files, reference genome/transcriptome, annotation databases
-- **Process:** Assembly-based fusion detection with transcript reconstruction
-- **Tools:** Integrates Velvet/Oases assembly, Bowtie2/Minimap2 alignment, custom fusion calling
-- **Memory Management:** Configurable sequential processing to prevent memory overload on large datasets
-- **Features:** Bpipe memory allocation control, per-sample cleanup, aggressive garbage collection
-- **Output:** Combined fusion results with confidence scoring and breakpoint resolution
-- **Validation:** Cross-references with known fusion databases and genomic repeat regions
+Assembly-based fusion detection optimized for long-read data. Uses bpipe workflow with Velvet/Oases assembly and configurable memory management for large datasets.
 
 ### Exon Repair Protocol
-Five-phase molecular-level sequence reconstruction for chimeric RNA validation.
-- **Phase 1:** Data integration from LongGF, Genion, and JaffaL results
-- **Phase 2:** BLAST database setup and sequence extraction from fusion candidates
-- **Phase 3:** Transcript selection using BLAST analysis and confidence scoring
-- **Phase 4:** Exon boundary detection and breakpoint-aware coordinate calculation
-- **Phase 5:** Sequence reconstruction using bedtools getfasta and multi-step merging
-- **Output:** Validated chimeric sequences with precise breakpoint coordinates, filtered fusion library
-- **Features:** Handles complex splice variants, validates fusion feasibility, generates high-confidence chimeric sequences
+Five-phase molecular-level sequence reconstruction: (1) data integration, (2) BLAST setup, (3) transcript selection, (4) exon boundary detection, (5) sequence reconstruction. Produces validated chimeric sequences with precise breakpoint coordinates.
 
 ## Output Structure
 
 ```
 results/
 ├── longgf_results/                    # LongGF outputs
-│   ├── *.log                         # Detailed alignment logs
-│   ├── *_results.txt                 # Processed fusion candidates
+│   ├── *.bam                         # BAM alignment files per sample
+│   ├── *.sam                         # SAM alignment files per sample
+│   ├── *.log                         # Detailed alignment logs per sample
 │   ├── Combined_LongGF_chimera_results_total.xlsx  # Aggregated results (Excel)
-│   └── Combined_LongGF_chimera_results_total.csv   # Aggregated results (CSV)
-├── *.sam                             # Alignment files for each sample (main directory)
-├── *.bam                             # BAM alignment files (main directory)
+│   ├── Combined_LongGF_chimera_results_total.csv   # Aggregated results (CSV)
+│   └── Combined_LongGF_chimera_results_with_sample_info.xlsx  # Results with sample tracking
 ├── genion_results/                   # Genion outputs  
 │   ├── *_genion.tsv                 # Main fusion results per sample
-│   └── *_genion.tsv.fail            # Debug output for failed candidates
-├── genion_references/               # Processed reference files (main directory)
+│   ├── *_genion.tsv.fail            # Debug output for failed candidates
+│   ├── *.paf                        # PAF alignment files per sample
+│   └── run_genion.log               # Genion execution log
+├── genion_references/               # Processed reference files
+│   ├── Genion_modified_gtf_final.gtf  # Modified GTF for Genion
+│   ├── selfalign.paf                # Self-alignment reference
+│   └── selfalign.tsv                # Self-alignment data
 ├── jaffal_results/                  # JaffaL outputs
 │   └── JaffaL_combined_results.txt # Combined fusion results from all samples
 ├── exon_repair/                     # Exon repair outputs
-│   ├── blast_results/              # BLAST analysis files
-│   ├── bed_files/                  # Breakpoint coordinate files
-│   ├── reconstructed_sequences/    # Final chimeric sequences
-│   │   ├── *_geneA.fa             # 5' partner sequences
-│   │   ├── *_geneB.fa             # 3' partner sequences  
-│   │   └── *_merged.fa            # Complete chimeric sequences
-│   └── phase[1-5]_results/         # Intermediate processing outputs
+│   ├── blast_reference/            # BLAST database files
+│   │   ├── All_chimera_db.*        # BLAST database components
+│   │   └── my_blast_fasta_reference.fa  # Processed transcriptome reference
+│   ├── blast_result/               # BLAST analysis results
+│   │   └── chimera_blast_result.txt  # Raw BLAST output
+│   ├── modified_exon_repair/       # Exon data processing
+│   │   ├── all_exons.bed           # Exon coordinate data
+│   │   └── transcripts_for_exon_repair.txt  # Transcript metadata
+│   ├── All_chRNAs_passing_blast_exon_repair.csv   # Final validated chimeras (CSV)
+│   ├── All_chRNAs_passing_blast_exon_repair.xlsx  # Final validated chimeras (Excel)
+│   ├── Merged_seqs_exon_repair_renamed.fa         # Final reconstructed sequences
+│   ├── chimera_library.csv         # Integrated chimera data from all tools
+│   ├── bed_file_A.bed              # Gene A breakpoint coordinates
+│   ├── bed_file_B.bed              # Gene B breakpoint coordinates
+│   ├── Fasta_geneA_collapse.fa     # Gene A sequences (collapsed by read ID)
+│   ├── Fasta_geneB_collapse.fa     # Gene B sequences (collapsed by read ID)
+│   ├── merged_samples.bam          # Multi-sample merged BAM file
+│   └── [intermediate processing files]  # Phase-specific outputs and temporary files
 └── logs/                           # Pipeline logs
-    ├── typhon.log                  # Main pipeline log
-    ├── longgf.log                  # Module-specific logs
-    ├── genion.log
-    └── jaffal.log
+    ├── typhon_main.log             # Main pipeline log
+    ├── longgf.log                  # LongGF module log
+    ├── genion.log                  # Genion module log
+    └── jaffal.log                  # JaffaL module log
 ```
 
-## Final Results
+## Key Output Files
 
-The pipeline produces two primary final outputs in the `exon_repair/` directory:
+**Primary Results (in `exon_repair/` directory):**
+- `All_chRNAs_passing_blast_exon_repair.csv/.xlsx` - Validated chimeras with chromosomal classification, breakpoint coordinates, and tool origin tracking
+- `Merged_seqs_exon_repair_renamed.fa` - High-confidence reconstructed chimeric sequences with precise breakpoints
 
-### Validated Chimeric Sequences
-- **File:** `Merged_seqs_exon_repair_renamed.fa`
-- **Format:** FASTA
-- **Content:** High-confidence reconstructed chimeric sequences with precise breakpoint coordinates
-- **Features:** 5' and 3' gene partners merged into complete chimeric transcripts
-
-### Comprehensive Chimera Metadata
-- **Files:** 
-  - `All_chRNAs_passing_blast_exon_repair.xlsx` (Excel format)
-  - `All_chRNAs_passing_blast_exon_repair.csv` (CSV format)
-- **Content:** Validated chimeras that passed all filtering and BLAST analysis steps
-- **Includes:** 
-  - Chromosomal classification (Intrachromosomal/Interchromosomal)
-  - BLAST validation metrics
-  - Breakpoint coordinates and exon boundaries
-  - Read-level evidence and support statistics
-  - Tool origin tracking (LongGF, Genion, JaffaL)
-
-These files represent the final, publication-ready results with molecular-level validation and can be used directly for downstream analysis, visualization, or experimental validation.
+These represent publication-ready results with molecular-level validation for downstream analysis.
 
 ## Troubleshooting
 
@@ -331,15 +228,9 @@ These files represent the final, publication-ready results with molecular-level 
 
 ## Performance Notes
 
-**Storage Considerations:**
-- FASTQ files: 5-50+ GB per sample for long-read data
-- Temporary processing space: 2-3x the size of input FASTQ files
-- Monitor disk space during execution as intermediate files can be substantial
-
-**Optimization:**
-- SSD storage recommended for faster I/O during intensive processing steps
-- Ensure sufficient RAM for genome indexing and alignment steps
-- Use `process_samples_sequentially: true` for JaffaL on memory-constrained systems
+- **Storage:** Requires 2-3x input FASTQ size for temporary processing space
+- **Memory:** Enable `process_samples_sequentially: true` for JaffaL on memory-constrained systems  
+- **Optimization:** SSD storage recommended for faster I/O performance
 
 ## Citations and References
 

@@ -117,4 +117,3 @@ options:
     bam_file: null                           # BAM file path (auto-detected from output_dir if null)
     keep_intermediate: true                  # Keep intermediate BLAST and BED files
     blast_threads: 20                        # Threads for BLAST operations
-    min_blast_identity: 80                   # Minimum BLAST identity percentage
