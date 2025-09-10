@@ -1,7 +1,7 @@
 """
 Typhon: Modular Pipeline for Chimeric RNA Detection
 
-A Python package designed to provide a robust, modular, and user-friendly 
+A Python package designed to provide a modular and user-oriented 
 pipeline for chimeric RNA detection using tools such as LongGF, Genion, and JaffaL.
 """
 

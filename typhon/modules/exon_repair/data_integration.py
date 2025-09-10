@@ -103,7 +103,27 @@ class DataIntegrator:
         # R equivalent: Total <- Total %>% distinct(Read_ID, .keep_all=TRUE)
         total_df = total_df.drop_duplicates(subset=['Read_ID'], keep='first')
         
-        # Create context dataframe for provenance tracking
+        # Filter out multi-gene fusions (3+ genes) before GTF mapping and downstream processing.
+        # Keep only 2-gene fusions (exactly one colon in Chimera_ID). Save filtered multi-gene
+        # entries to a separate CSV for transparency and downstream analysis if needed.
+        colon_counts = total_df['Chimera_ID'].str.count(':')
+        multi_gene_mask = colon_counts > 1
+        multi_gene_count = int(multi_gene_mask.sum())
+        if multi_gene_count > 0:
+            try:
+                multi_gene_df = total_df.loc[multi_gene_mask].copy()
+                multi_gene_file = os.path.join(self.work_dir, 'multi_gene_fusions.csv')
+                multi_gene_df.to_csv(multi_gene_file, index=False)
+                self.logger.info(f"Saved {multi_gene_count} multi-gene fusions (>=3 genes) to: {multi_gene_file}")
+            except Exception as e:
+                # Do not fail the pipeline if saving the side file encounters an issue
+                self.logger.warning(f"Could not save multi-gene fusions file: {e}")
+            
+            # Proceed with only 2-gene fusions in the main pipeline
+            total_df = total_df.loc[~multi_gene_mask].copy()
+            self.logger.info(f"Continuing with {len(total_df)} two-gene fusions (exactly 2 genes)")
+        
+        # Create context dataframe for provenance tracking (matches filtered set)
         context_df = total_df[['Read_ID', 'Chimera_ID', 'Origin']].copy()
         
         # 1.3 GTF Annotation Mapping (R code lines 84-96)

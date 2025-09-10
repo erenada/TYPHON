@@ -6,7 +6,6 @@ This module implements the sequence reconstruction pipeline from the R workflow,
 including bedtools getfasta extraction, multi-step sequence merging, and final
 chimeric sequence assembly.
 
-Based on R code lines 311-337 from Annotated_alternative_exon_repair_code_for_Eren.md
 
 Authors: Harry Kane, PhD; Eren Ada, PhD
 """
@@ -86,7 +85,7 @@ class SequenceReconstructor:
                 chimera_library
             )
             
-            # Generate comprehensive results
+            # Generate results
             results = {
                 'reconstructed_sequences': final_fasta,
                 'filtered_chimeras': filtered_results['filtered_chimeras'],

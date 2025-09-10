@@ -5,7 +5,6 @@ Phase 4: Exon Data Processing and Breakpoint Detection
 This module implements the complex exon data processing pipeline from the R workflow,
 including GTF attribute parsing, breakpoint detection, and BED file generation.
 
-Based on R code lines 224-290 from Annotated_alternative_exon_repair_code_for_Eren.md
 """
 
 import pandas as pd
@@ -19,7 +18,7 @@ import subprocess
 
 def parse_gtf_attributes_to_bed(exon_bed_path: Path) -> pd.DataFrame:
     """
-    Parse GTF attributes from BED file using a robust approach.
+    Parse GTF attributes from BED file using a reliable approach.
     
     Instead of trying to reproduce complex R data.table operations,
     directly parse GTF attributes to extract transcript_name and gene_name.

@@ -484,14 +484,14 @@ def main():
         
         if 'genion' in modules_to_run:
             if not sam_files:
-                # Look for existing SAM files if LongGF wasn't run
-                sam_files = list(Path(output_dir).glob("*.sam"))
+                # Look for existing SAM files if LongGF wasn't run (sorted lexicographically by basename)
+                sam_files = sorted(Path(output_dir).glob("*.sam"), key=lambda p: p.name)
                 
                 # Also check common LongGF output locations
                 if not sam_files:
                     for location in ['test_output_longgf', 'longgf_results', f"{output_dir}/longgf_results"]:
                         if os.path.exists(location):
-                            sam_files = list(Path(location).glob("*.sam"))
+                            sam_files = sorted(Path(location).glob("*.sam"), key=lambda p: p.name)
                             if sam_files:
                                 logger.info(f"Found existing SAM files in {location}")
                                 break
@@ -523,7 +523,7 @@ def main():
                     )
                     
                     logger.info("Exon repair completed successfully")
-                    logger.info(f"High-confidence chimeras: {exon_repair_results['statistics']['total_chimeras']}")
+                    logger.info(f"Total chimeras found: {exon_repair_results['statistics']['total_chimeras']}")
                     
                 except Exception as e:
                     logger.error(f"Exon repair failed: {e}")

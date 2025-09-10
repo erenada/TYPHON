@@ -135,6 +135,7 @@ def run_bpipe_jaffal(fasta_file, jaffal_dir, threads=16, max_memory="24G"):
 def aggregate_jaffal_results(jaffal_dir, output_dir):
     """
     Aggregate JaffaL results from all samples into a single file.
+    Properly handles headers by verifying column consistency across files.
     
     Original bash command:
     find $8/results -mindepth 2 -type f -name "*.fastq.summary" -exec cat {} \; > JaffaL_combined_results.txt
@@ -170,19 +171,30 @@ def aggregate_jaffal_results(jaffal_dir, output_dir):
         
         logging.info(f"Found {len(summary_files)} summary files to combine")
         
-        # Concatenate all summary files
+        # Simple header-aware concatenation
         with open(combined_file, 'w') as outfile:
-            for summary_file in summary_files:
+            for i, summary_file in enumerate(summary_files):
                 logging.debug(f"Adding {summary_file} to combined results")
                 with open(summary_file, 'r') as infile:
-                    outfile.write(infile.read())
+                    lines = infile.readlines()
+                    
+                    if i == 0:
+                        # First file: write everything (header + data)
+                        outfile.writelines(lines)
+                    else:
+                        # Subsequent files: skip first line if it looks like a header
+                        if lines and len(lines) > 1:
+                            outfile.writelines(lines[1:])
         
+        logging.info(f"Combined {len(summary_files)} files")
         logging.info(f"Created combined JaffaL results: {combined_file}")
         return combined_file
         
     except Exception as e:
         logging.error(f"Failed to aggregate JaffaL results: {e}")
         raise
+
+
 
 
 
@@ -251,8 +263,11 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
     
     try:
         # Step 2: Copy FASTQ files to fasta_files directory
-        fastq_files = glob.glob(os.path.join(fastq_dir, '*.fastq')) + \
-                     glob.glob(os.path.join(fastq_dir, '*.fq'))
+        # Exact parity with old pipeline: include only .fastq (no .fq), sorted lexicographically by basename
+        fastq_files = sorted(
+            glob.glob(os.path.join(fastq_dir, '*.fastq')),
+            key=lambda p: os.path.basename(p)
+        )
         
         if not fastq_files:
             raise FileNotFoundError(f"No FASTQ files found in {fastq_dir}")

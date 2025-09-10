@@ -82,8 +82,11 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
     
     os.makedirs(output_dir, exist_ok=True)
     
-    # Support gzipped fastq
-    fastq_files = glob.glob(os.path.join(fastq_dir, '*.fastq')) + glob.glob(os.path.join(fastq_dir, '*.fastq.gz'))
+    # Discover FASTQ files (non-recursive) and sort lexicographically by basename for deterministic order
+    fastq_files = sorted(
+        glob.glob(os.path.join(fastq_dir, '*.fastq')) + glob.glob(os.path.join(fastq_dir, '*.fastq.gz')),
+        key=lambda p: Path(p).name
+    )
     
     if not fastq_files:
         raise ValueError(f"No FASTQ files found in {fastq_dir}")

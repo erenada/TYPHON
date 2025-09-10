@@ -10,13 +10,13 @@
 
 ## Overview
 
-TYPHON is a comprehensive pipeline for chimeric RNA detection from long-read sequencing data (Nanopore/PacBio). It integrates three complementary fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for molecular-level sequence validation.
+TYPHON is a pipeline for chimeric RNA detection from long-read sequencing data (Nanopore/PacBio). It integrates three fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for sequence-based validation.
 
 **Key Features:**
 - **Multi-tool integration** - Combines three fusion detection algorithms
 - **Long-read optimized** - Designed for Nanopore and PacBio technologies  
-- **Molecular validation** - Reconstructs complete chimeric sequences with precise breakpoints
-- **High-confidence results** - Cross-validation and BLAST-based filtering
+- **Sequence-based validation** - Reconstructs chimeric sequences with breakpoint coordinates
+- **Filtering** - Cross-validation and BLAST-based filtering
 
 ## About the Name
 
@@ -148,7 +148,7 @@ Graph-based fusion detection with TYPHON-specific enhancements. Builds splice gr
 Assembly-based fusion detection optimized for long-read data. Uses bpipe workflow with Velvet/Oases assembly and configurable memory management for large datasets.
 
 ### Exon Repair Protocol
-Five-phase molecular-level sequence reconstruction: (1) data integration, (2) BLAST setup, (3) transcript selection, (4) exon boundary detection, (5) sequence reconstruction. Produces validated chimeric sequences with precise breakpoint coordinates.
+Five-phase sequence reconstruction: (1) data integration, (2) BLAST setup, (3) transcript selection, (4) exon boundary detection, (5) sequence reconstruction. Produces chimeric sequences with breakpoint coordinates.
 
 ## Output Structure
 
@@ -202,9 +202,9 @@ results/
 
 **Primary Results (in `exon_repair/` directory):**
 - `All_chRNAs_passing_blast_exon_repair.csv/.xlsx` - Validated chimeras with chromosomal classification, breakpoint coordinates, and tool origin tracking
-- `Merged_seqs_exon_repair_renamed.fa` - High-confidence reconstructed chimeric sequences with precise breakpoints
+- `Merged_seqs_exon_repair_renamed.fa` - Reconstructed chimeric sequences with breakpoint coordinates
 
-These represent publication-ready results with molecular-level validation for downstream analysis.
+These are the primary outputs of the exon repair module and can be used for downstream analysis.
 
 ## Troubleshooting
 
