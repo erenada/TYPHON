@@ -89,12 +89,18 @@ modules:
     min_low_spanning_reads: 1                  # Minimum spanning reads for low-confidence fusions
     
     # Advanced JaffaL parameters (applied during setup)
-    # assembly_parameters:                     # Parameters for transcript assembly
-    #   velvet_hash_length: 19                 # Velvet k-mer length
-    #   oases_merge_length: 27                 # Oases merge k-mer length
-    # alignment_parameters:                    # Parameters for read alignment
-    #   bowtie2_sensitivity: "--very-sensitive-local"  # Bowtie2 alignment mode
-    #   minimap2_splice_flags: "-ax splice"    # Minimap2 splice alignment flags
+    assembly_parameters:                     # Parameters for transcript assembly
+      kmer_lengths: "19,36,4"                # K-mer lengths for assembly (Ks parameter)
+      oases_merge_length: 27                 # Oases merge k-mer length (Kmerge parameter)
+      transcript_min_length: 100             # Minimum contig length (transLength parameter)
+    trimming_parameters:                     # Parameters for read trimming
+      phred_scores: 33                       # PHRED quality score type
+      min_read_length: 35                    # Minimum read length after trimming
+      min_quality_score: 0                   # Quality trimming threshold (0=no trimming)
+    alignment_parameters:                    # Parameters for read alignment
+      map_params: "-k1 --no-mixed --no-discordant --mm"  # Bowtie2 mapping parameters
+      blast_options: "-perc_identity 96"     # BLAST identity threshold
+      blat_options: "-minIdentity=96 -minScore=30"  # BLAT alignment options
 
 # =============================================================================
 # GLOBAL OPTIONS

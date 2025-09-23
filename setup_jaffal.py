@@ -303,12 +303,20 @@ def apply_typhon_modifications(jaffal_path, min_low_spanning_reads=1):
         logging.info(f"Created directory: {dirname}")
 
 
-def update_jaffal_stages(jaffal_path, genome_build, annotation_build):
+def update_jaffal_stages(jaffal_path, genome_build, annotation_build, assembly_params=None, trimming_params=None, alignment_params=None):
     """
-    Update JAFFA_stages.groovy with genome and annotation configuration.
+    Update JAFFA_stages.groovy with genome, annotation, and advanced assembly configuration.
     
-    Based on Setup.sh line 23:
+    Based on Setup.sh line 23 plus additional assembly parameter configuration:
     sed -i "16s:.*:refBase = \"$1/JAFFA-version-2.3/references\":;38s:.*:genome=\"${2}\":;39s:.*:annotation=\"${3}\":;38s:.*:genome=\"${2}\":;61s:.*:jaffa_output=\"${1}/JAFFA-version-2.3/results/\":" JAFFA_stages.groovy
+    
+    Args:
+        jaffal_path: Path to JAFFA-version-2.3 directory
+        genome_build: Genome build name (e.g., mm39)
+        annotation_build: Annotation build name (e.g., gencode_M28)
+        assembly_params: Dict with assembly parameters (kmer_lengths, oases_merge_length, transcript_min_length)
+        trimming_params: Dict with trimming parameters (phred_scores, min_read_length, min_quality_score)
+        alignment_params: Dict with alignment parameters (map_params, blast_options, blat_options)
     """
     logging.info(f"Updating JAFFA_stages.groovy for {genome_build}/{annotation_build}...")
     
@@ -343,6 +351,38 @@ def update_jaffal_stages(jaffal_path, genome_build, annotation_build):
         elif "jaffa_output" in line and line.strip().startswith("jaffa_output="):
             lines[i] = 'jaffa_output=codeBase + "/results/"\n'
     
+    # Apply advanced assembly parameters if provided
+    if assembly_params or trimming_params or alignment_params:
+        logging.info("  Applying advanced JaffaL parameters...")
+        
+        for i, line in enumerate(lines):
+            # Assembly parameters
+            if assembly_params:
+                if line.strip().startswith("Ks="):
+                    lines[i] = f'Ks="{assembly_params.get("kmer_lengths", "19,36,4")}"\n'
+                elif line.strip().startswith("Kmerge="):
+                    lines[i] = f'Kmerge={assembly_params.get("oases_merge_length", 27)}\n'
+                elif line.strip().startswith("transLength="):
+                    lines[i] = f'transLength={assembly_params.get("transcript_min_length", 100)}\n'
+            
+            # Trimming parameters  
+            if trimming_params:
+                if line.strip().startswith("scores="):
+                    lines[i] = f'scores={trimming_params.get("phred_scores", 33)}\n'
+                elif line.strip().startswith("minlen="):
+                    lines[i] = f'minlen={trimming_params.get("min_read_length", 35)}\n'
+                elif line.strip().startswith("minQScore="):
+                    lines[i] = f'minQScore={trimming_params.get("min_quality_score", 0)}\n'
+            
+            # Alignment parameters
+            if alignment_params:
+                if line.strip().startswith("mapParams="):
+                    lines[i] = f'mapParams="{alignment_params.get("map_params", "-k1 --no-mixed --no-discordant --mm")}"\n'
+                elif line.strip().startswith("blast_options="):
+                    lines[i] = f'blast_options="{alignment_params.get("blast_options", "-perc_identity 96")}"\n'
+                elif line.strip().startswith("blat_options="):
+                    lines[i] = f'blat_options="{alignment_params.get("blat_options", "-minIdentity=96 -minScore=30")}"\n'
+    
     # Write back the file
     with open(stages_file, "w") as f:
         f.writelines(lines)
@@ -352,6 +392,14 @@ def update_jaffal_stages(jaffal_path, genome_build, annotation_build):
     logging.info(f"    - genome: {genome_build}")
     logging.info(f"    - annotation: {annotation_build}")
     logging.info(f"    - jaffa_output: codeBase + \"/results/\"")
+    
+    # Log applied advanced parameters
+    if assembly_params:
+        logging.info(f"    - Assembly: Ks={assembly_params.get('kmer_lengths')}, Kmerge={assembly_params.get('oases_merge_length')}, transLength={assembly_params.get('transcript_min_length')}")
+    if trimming_params:
+        logging.info(f"    - Trimming: scores={trimming_params.get('phred_scores')}, minlen={trimming_params.get('min_read_length')}, minQScore={trimming_params.get('min_quality_score')}")
+    if alignment_params:
+        logging.info(f"    - Alignment: mapParams={alignment_params.get('map_params')}")
 
 
 def update_config(config_path="config.yaml"):
@@ -649,8 +697,14 @@ Examples:
             logging.info(f"  Annotation: {annotation_build}")
             logging.info(f"  Threads: {threads}")
             
+            # Extract advanced JaffaL parameters from config
+            assembly_params = jaffal_config.get('assembly_parameters')
+            trimming_params = jaffal_config.get('trimming_parameters')
+            alignment_params = jaffal_config.get('alignment_parameters')
+            
             # Update JaffaL configuration for the specified genome/annotation
-            update_jaffal_stages(jaffal_path, genome_build, annotation_build)
+            update_jaffal_stages(jaffal_path, genome_build, annotation_build, 
+                               assembly_params, trimming_params, alignment_params)
             
             process_reference_files(
                 jaffal_path,
