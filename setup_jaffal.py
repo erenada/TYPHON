@@ -246,14 +246,14 @@ def verify_jaffal_installation(jaffal_path):
                 missing_tools.append(f"{tool} (not executable)")
         else:
             missing_tools.append(tool)
-            logging.warning(f"✗ {tool} not found: {tool_path}")
+            logging.warning(f"{tool} not found: {tool_path}")
     
     # Report results
     if not missing_tools:
-        logging.info(f"✓ All {len(critical_tools)} critical tools installed successfully")
+        logging.info(f"All {len(critical_tools)} critical tools installed successfully")
         return True
     else:
-        logging.error(f"✗ Missing tools: {missing_tools}")
+        logging.error(f"Missing tools: {missing_tools}")
         logging.error("JaffaL installation appears incomplete")
         return False
 
@@ -322,7 +322,7 @@ def update_jaffal_stages(jaffal_path, genome_build, annotation_build):
     backup_file = os.path.join(jaffal_path, "Backup_of_JAFFA_stages_groovy_file")
     if not os.path.exists(backup_file):
         shutil.copy2(stages_file, backup_file)
-        logging.info("  ✓ Backed up JAFFA_stages.groovy")
+        logging.info("  Backed up JAFFA_stages.groovy")
     
     # Read the file
     with open(stages_file, "r") as f:
@@ -347,7 +347,7 @@ def update_jaffal_stages(jaffal_path, genome_build, annotation_build):
     with open(stages_file, "w") as f:
         f.writelines(lines)
     
-    logging.info(f"  ✓ Updated JAFFA_stages.groovy:")
+    logging.info(f"  Updated JAFFA_stages.groovy:")
     logging.info(f"    - refBase: codeBase + \"/references\"")
     logging.info(f"    - genome: {genome_build}")
     logging.info(f"    - annotation: {annotation_build}")
@@ -411,6 +411,42 @@ def process_reference_files(jaffal_dir, reference_files_dir, genome_build, annot
     os.chdir(references_dir)
     
     try:
+        # Validate all required reference files exist before processing
+        logging.info("Validating required reference files...")
+        
+        required_files = [
+            f"{genome_build}.fa.gz",
+            f"{genome_build}_{annotation_build}.bed", 
+            f"{genome_build}_{annotation_build}.fasta"
+        ]
+        
+        missing_files = []
+        for file_name in required_files:
+            if not os.path.exists(file_name):
+                # Check if uncompressed genome exists as alternative
+                if file_name.endswith('.fa.gz'):
+                    uncompressed = file_name[:-3]  # Remove .gz
+                    if os.path.exists(uncompressed):
+                        continue  # This is OK, we have the uncompressed version
+                missing_files.append(file_name)
+        
+        if missing_files:
+            logging.error("Required reference files are missing:")
+            for missing_file in missing_files:
+                logging.error(f"  - {missing_file}")
+            logging.error("")
+            logging.error("Please check your config.yaml file and ensure:")
+            logging.error(f"  - Reference files directory: {reference_files_dir}")
+            logging.error(f"  - Expected genome build: {genome_build}")
+            logging.error(f"  - Expected annotation: {annotation_build}")
+            logging.error("")
+            logging.error("Common issues:")
+            logging.error("  - Incorrect file naming (check underscores, case sensitivity)")
+            logging.error("  - Wrong genome/annotation build names in config.yaml")
+            logging.error("  - Files not copied to the reference directory")
+            raise FileNotFoundError(f"Missing required reference files: {missing_files}")
+        
+        logging.info("All required reference files found")
         # Step 1: Decompress genome FASTA
         genome_gz = f"{genome_build}.fa.gz"
         genome_fa = f"{genome_build}.fa"
@@ -418,83 +454,75 @@ def process_reference_files(jaffal_dir, reference_files_dir, genome_build, annot
         if os.path.exists(genome_gz):
             logging.info(f"Decompressing {genome_gz}...")
             subprocess.run(['gzip', '-d', genome_gz], check=True)
-        elif not os.path.exists(genome_fa):
-            raise FileNotFoundError(f"Genome file not found: {genome_gz} or {genome_fa}")
+        # Note: genome_fa existence is already validated above
         
         # Step 2: Create masked genome
         bed_file = f"{genome_build}_{annotation_build}.bed"
         masked_genome = f"Masked_{genome_build}.fa"
         
-        if os.path.exists(bed_file):
-            logging.info(f"Creating masked genome using {bed_file}...")
-            subprocess.run([
-                'bedtools', 'maskfasta',
-                '-fi', genome_fa,
-                '-fo', masked_genome,
-                '-bed', bed_file
-            ], check=True)
-        else:
-            logging.warning(f"BED file {bed_file} not found, skipping genome masking")
+        # BED file existence is already validated above
+        logging.info(f"Creating masked genome using {bed_file}...")
+        subprocess.run([
+            'bedtools', 'maskfasta',
+            '-fi', genome_fa,
+            '-fo', masked_genome,
+            '-bed', bed_file
+        ], check=True)
         
         # Step 3: Process transcriptome FASTA (clean headers: spaces → underscores)
         transcriptome_input = f"{genome_build}_{annotation_build}.fasta"
         transcriptome_output = f"{genome_build}_{annotation_build}.fa"
         
-        if os.path.exists(transcriptome_input):
-            logging.info(f"Processing transcriptome FASTA headers...")
+        # Transcriptome file existence is already validated above
+        logging.info(f"Processing transcriptome FASTA headers...")
+        
+        # Use reformat from bbmap (now installed via conda)
+        cmd1 = ['reformat.sh', f'fastawrap=0', f'in={transcriptome_input}', 'out=stdout.fa']
+        cmd2 = ['sed', 's/ /__/g']
+        
+        with open(transcriptome_output, 'w') as outfile:
+            p1 = subprocess.Popen(cmd1, stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(cmd2, stdin=p1.stdout, stdout=outfile, text=True)
+            if p1.stdout:
+                p1.stdout.close()
+            p2.communicate()
+            p1.wait()  # Wait for p1 to complete
             
-            # Use reformat from bbmap (now installed via conda)
-            cmd1 = ['reformat.sh', f'fastawrap=0', f'in={transcriptome_input}', 'out=stdout.fa']
-            cmd2 = ['sed', 's/ /__/g']
-            
-            with open(transcriptome_output, 'w') as outfile:
-                p1 = subprocess.Popen(cmd1, stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(cmd2, stdin=p1.stdout, stdout=outfile, text=True)
-                if p1.stdout:
-                    p1.stdout.close()
-                p2.communicate()
-                p1.wait()  # Wait for p1 to complete
-                
-            if p1.returncode != 0 or p2.returncode != 0:
-                logging.error(f"Pipeline failed: reformat returned {p1.returncode}, sed returned {p2.returncode}")
-                raise subprocess.CalledProcessError(1, "reformat | sed pipeline")
-            else:
-                logging.info(f"Successfully processed transcriptome FASTA: {transcriptome_output}")
-                
+        if p1.returncode != 0 or p2.returncode != 0:
+            logging.error(f"Pipeline failed: reformat returned {p1.returncode}, sed returned {p2.returncode}")
+            raise subprocess.CalledProcessError(1, "reformat | sed pipeline")
         else:
-            logging.warning(f"Transcriptome file {transcriptome_input} not found")
+            logging.info(f"Successfully processed transcriptome FASTA: {transcriptome_output}")
         
         # Step 4: Build Bowtie2 indices
-        if os.path.exists(transcriptome_output):
-            logging.info(f"Building Bowtie2 index for transcriptome...")
-            subprocess.run([
-                'bowtie2-build',
-                transcriptome_output,
-                f"{genome_build}_{annotation_build}",
-                '--threads', str(threads)
-            ], check=True)
+        # Files existence guaranteed by validation above
+        logging.info(f"Building Bowtie2 index for transcriptome...")
+        subprocess.run([
+            'bowtie2-build',
+            transcriptome_output,
+            f"{genome_build}_{annotation_build}",
+            '--threads', str(threads)
+        ], check=True)
         
-        if os.path.exists(masked_genome):
-            logging.info(f"Building Bowtie2 index for masked genome...")
-            subprocess.run([
-                'bowtie2-build',
-                masked_genome,
-                f"Masked_{genome_build}",
-                '--threads', str(threads)
-            ], check=True)
+        logging.info(f"Building Bowtie2 index for masked genome...")
+        subprocess.run([
+            'bowtie2-build',
+            masked_genome,
+            f"Masked_{genome_build}",
+            '--threads', str(threads)
+        ], check=True)
         
         # Step 5: Build BLAST database (matching old TYPHON Setup.sh line 48)
-        if os.path.exists(transcriptome_output):
-            blast_db_name = f"{genome_build}_{annotation_build}_blast"
-            blast_title = f"TYPHON_{genome_build}_{annotation_build}_reference"
-            logging.info(f"Building BLAST database: {blast_db_name}...")
-            subprocess.run([
-                'makeblastdb',
-                '-in', transcriptome_output,
-                '-dbtype', 'nucl',
-                '-out', blast_db_name
-            ], check=True)
-            logging.info(f"Successfully created BLAST database: {blast_db_name} with title: {blast_title}")
+        blast_db_name = f"{genome_build}_{annotation_build}_blast"
+        blast_title = f"TYPHON_{genome_build}_{annotation_build}_reference"
+        logging.info(f"Building BLAST database: {blast_db_name}...")
+        subprocess.run([
+            'makeblastdb',
+            '-in', transcriptome_output,
+            '-dbtype', 'nucl',
+            '-out', blast_db_name
+        ], check=True)
+        logging.info(f"Successfully created BLAST database: {blast_db_name} with title: {blast_title}")
         
         logging.info("Reference file processing completed successfully")
         
@@ -639,18 +667,11 @@ Examples:
         if not args.skip_config_update:
             update_config()
         
-        logging.info("=" * 60)
         logging.info("JaffaL setup completed successfully!")
-        logging.info(f"JaffaL installed to: {jaffal_path}")
-        logging.info("Key achievements:")
-        logging.info("  ✓ Used conda-installed dependencies (90% time savings)")
-        logging.info("  ✓ Compiled JaffaL custom C++ tools")
-        logging.info("  ✓ Applied TYPHON modifications")
-        logging.info("  ✓ Created tools.groovy configuration")
+        logging.info(f"Installation path: {jaffal_path}")
         if args.references:
-            logging.info("  ✓ Processed reference files and built indices")
-        logging.info("  ✓ Enabled JaffaL in config.yaml")
-        logging.info("=" * 60)
+            logging.info("Reference files processed and indices built")
+        logging.info("Configuration updated in config.yaml")
         
     except Exception as e:
         logging.error(f"JaffaL setup failed: {e}")

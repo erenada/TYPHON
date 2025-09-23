@@ -105,7 +105,7 @@ def verify_typhon_files(script_dir, log_path):
         log_to_file(f"ERROR: {error_msg}", log_path)
         raise FileNotFoundError(error_msg)
     
-    log_to_file("✓ All required TYPHON customization files found", log_path)
+    log_to_file("All required TYPHON customization files found", log_path)
     return required_files
 
 
@@ -125,11 +125,11 @@ def apply_typhon_modifications(temp_dir, custom_annotate_path, patch_path, log_p
     # Step 1: Backup original file
     if os.path.exists(original_annotate):
         shutil.copy2(original_annotate, backup_annotate)
-        log_to_file("✓ Backed up original annotate.cpp", log_path)
+        log_to_file("Backed up original annotate.cpp", log_path)
     
     # Step 2: Replace with TYPHON custom version
     shutil.copy2(custom_annotate_path, original_annotate)
-    log_to_file("✓ Replaced annotate.cpp with TYPHON custom version", log_path)
+    log_to_file("Replaced annotate.cpp with TYPHON custom version", log_path)
     log_to_file("  - Enables full debug output by default", log_path)
     log_to_file("  - Adds read ID tracking to fusion output", log_path)
     log_to_file("  - Outputs one line per supporting read", log_path)
@@ -145,7 +145,7 @@ def apply_typhon_modifications(temp_dir, custom_annotate_path, patch_path, log_p
                 capture_output=True
             )
             if result.returncode == 0:
-                log_to_file("✓ Applied additional cleanup patch", log_path)
+                log_to_file("Applied additional cleanup patch", log_path)
             else:
                 log_to_file(f"WARNING: Patch application had issues: {result.stderr}", log_path)
     except subprocess.CalledProcessError as e:
@@ -236,10 +236,9 @@ Examples:
     log_to_file(f"  Threads: {threads}", log_path)
     log_to_file("", log_path)
     log_to_file("TYPHON Customizations:", log_path)
-    log_to_file("  ✓ Read ID tracking per fusion candidate", log_path)
-    log_to_file("  ✓ Full debug output enabled by default", log_path)
-    log_to_file("  ✓ One line per supporting read (not per fusion)", log_path)
-    log_to_file("  ✓ Enhanced downstream analysis capabilities", log_path)
+    log_to_file("  - Read ID tracking per fusion candidate", log_path)
+    log_to_file("  - Full debug output enabled by default", log_path)
+    log_to_file("  - One line per supporting read (not per fusion)", log_path)
     
     temp_dir = tempfile.mkdtemp(prefix="typhon_genion_build_")
     try:
@@ -288,7 +287,7 @@ Examples:
         if result.returncode != 0:
             log_to_file(f"ERROR: Compilation failed: {result.stderr}", log_path)
             raise subprocess.CalledProcessError(result.returncode, make_cmd)
-        log_to_file("✓ Compilation completed successfully", log_path)
+        log_to_file("Compilation completed successfully", log_path)
 
         # Step 4: Install binary
         log_to_file("", log_path)
@@ -302,13 +301,13 @@ Examples:
         dest_bin = os.path.join(output_bin_dir, "genion")
         shutil.move(bin_path, dest_bin)
         os.chmod(dest_bin, 0o755)
-        log_to_file(f"✓ Installed to: {dest_bin}", log_path)
+        log_to_file(f"Installed to: {dest_bin}", log_path)
         
         # Step 5: Verify installation
         try:
             result = run_cmd([dest_bin, "--help"], log_path=log_path, check=False)
             if result.returncode == 0 or "usage" in result.stderr.lower():
-                log_to_file("✓ Binary installation verified", log_path)
+                log_to_file("Binary installation verified", log_path)
             else:
                 log_to_file("WARNING: Binary verification inconclusive", log_path)
         except Exception:
@@ -317,20 +316,9 @@ Examples:
         log_to_file("=" * 70, log_path)
         log_to_file("TYPHON Custom Genion Setup Completed Successfully!", log_path)
         log_to_file("", log_path)
-        log_to_file("Installation Summary:", log_path)
-        log_to_file(f"  Binary location: {dest_bin}", log_path)
-        log_to_file(f"  Compilation mode: {'Debug' if debug_compilation else 'Optimized'}", log_path)
-        log_to_file("", log_path)
-        log_to_file("Key Features Enabled:", log_path)
-        log_to_file("  ✓ Read-level output granularity", log_path)
-        log_to_file("  ✓ Enhanced fusion validation capabilities", log_path)
-        log_to_file("  ✓ Full debug output for detailed analysis", log_path)
-        log_to_file("  ✓ Improved integration with TYPHON pipeline", log_path)
-        log_to_file("", log_path)
-        log_to_file("Usage in Pipeline:", log_path)
-        log_to_file("  The custom Genion will automatically be used by typhon_main.py", log_path)
-        log_to_file("  Output format: One line per supporting read ID (not per fusion)", log_path)
-        log_to_file("  Enhanced columns: Includes read ID tracking for validation", log_path)
+        log_to_file("Genion setup completed successfully", log_path)
+        log_to_file(f"Binary location: {dest_bin}", log_path)
+        log_to_file(f"Compilation mode: {'Debug' if debug_compilation else 'Optimized'}", log_path)
         log_to_file("=" * 70, log_path)
         
         # Optional cleanup

@@ -1,7 +1,8 @@
 """
 TYPHON Exon Repair Module
 
-Sequence reconstruction and exon-boundary-based filtering for chimeric RNA candidates.
+Molecular-level sequence reconstruction for chimeric RNA detection.
+Replaces simple statistical integration with comprehensive exon repair protocol.
 
 Authors: Harry Kane, PhD; Eren Ada, PhD
 """
@@ -29,11 +30,11 @@ def run_exon_repair(config: dict, output_dir: str, **kwargs) -> dict:
     import logging
     
     logger = logging.getLogger(__name__)
-    logger.info("Starting exon repair")
+    logger.info("Starting exon repair with refactored modules")
     
     try:
         # Phase 1: Data Integration and Preparation
-        logger.info("Phase 1: Data integration")
+        logger.info("Phase 1: Data Integration")
         integrator = DataIntegrator(config, output_dir)
         chimera_library = integrator.integrate_tool_data(
             longgf_file=kwargs.get('longgf_file'),
@@ -42,18 +43,18 @@ def run_exon_repair(config: dict, output_dir: str, **kwargs) -> dict:
         )
         
         # Phase 2: Sequence Extraction and BLAST Setup
-        logger.info("Phase 2: BLAST setup")
+        logger.info("Phase 2: BLAST Setup")
         blast_processor = BlastSetupProcessor(config, output_dir)
         phase2_results = blast_processor.setup_blast_analysis(chimera_library)
         
         # Phase 3: BLAST Analysis and Transcript Selection
-        logger.info("Phase 3: Transcript selection")
+        logger.info("Phase 3: Transcript Selection")
         transcript_selector = TranscriptSelector(config, output_dir)
         phase3_results = transcript_selector.analyze_and_select_transcripts(chimera_library, phase2_results)
         
         # Phase 4: Exon Data Processing and Breakpoint Detection
         from .exon_data_processing import run_phase4_exon_processing
-        logger.info("Phase 4: Exon data processing and breakpoint detection")
+        logger.info("Phase 4: Exon Data Processing and Breakpoint Detection")
         phase4_results = run_phase4_exon_processing(
             phase3_results['selected_transcripts_with_order'],
             phase2_results['transcript_metadata']['exons_bed'],
@@ -62,11 +63,11 @@ def run_exon_repair(config: dict, output_dir: str, **kwargs) -> dict:
         )
         
         # Phase 5: Sequence Reconstruction
-        logger.info("Phase 5: Sequence reconstruction")
+        logger.info("Phase 5: Sequence Reconstruction")
         reconstructor = SequenceReconstructor(config, output_dir)
         phase5_results = reconstructor.reconstruct_sequences(phase4_results, chimera_library)
         
-        # Return results
+        # Return comprehensive results
         results = {
             'chimera_library': chimera_library,
             'phase2_results': phase2_results,

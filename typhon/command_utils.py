@@ -49,7 +49,7 @@ def setup_module_logger(module_name, output_dir):
             if handler not in logger.handlers:
                 logger.addHandler(handler)
     
-    logger.info(f"=== {module_name.upper()} MODULE START ===")
+    logger.info(f"Starting {module_name} module")
     
     return logger
 
