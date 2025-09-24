@@ -299,12 +299,14 @@ class TranscriptSelector:
             duplicate_read_ids = data_subset['Read_ID'][data_subset['Read_ID'].duplicated()].unique()
             remove_singles = data_subset[data_subset['Read_ID'].isin(duplicate_read_ids)]
             
-            # Sort and assign actual order (R code lines 220-221)
+            # Sort for consistent ordering (R code lines 220-221)
             # R equivalent: Remove_singles <- arrange(Remove_singles, desc(Read_ID), q.start)
             remove_singles = remove_singles.sort_values(['Read_ID', 'q.start'], ascending=[False, True])
             
-            # R equivalent: Remove_singles$Actual_order <- rep(c("A", "B"), length.out = nrow(Remove_singles))
-            remove_singles['Actual_order'] = ['A', 'B'] * (len(remove_singles) // 2) + ['A'] * (len(remove_singles) % 2)
+            # CRITICAL FIX: Use LongGF_Order as Actual_order instead of blind alternating pattern
+            # The LongGF_Order correctly identifies GeneA vs GeneB based on Chimera_ID position
+            # This fixes the bug where q.start sorting doesn't guarantee gene order
+            remove_singles['Actual_order'] = remove_singles['LongGF_Order']
             
             self.logger.info(f"Selected transcripts for {len(remove_singles)} reads with both genes")
             
