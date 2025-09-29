@@ -129,13 +129,26 @@ class DataIntegrator:
         # 1.3 GTF Annotation Mapping (R code lines 84-96)
         self.logger.info("Step 1.4: GTF annotation mapping...")
         
-        # Split Chimera_ID into GeneA and GeneB
+        # Split Chimera_ID into GeneA and GeneB with standardized ordering
         # R equivalent: Data[c('GeneA', 'GeneB')] <- str_split_fixed(Data$Chimera_ID, ':', 2)
-        # Handle cases where Chimera_ID may not have exactly 2 parts
+        # IMPROVEMENT: Standardize gene order to ensure consistent GeneA/GeneB assignment
         split_chimera = total_df['Chimera_ID'].str.split(':', expand=True)
         if split_chimera.shape[1] >= 2:
-            total_df['GeneA'] = split_chimera.iloc[:, 0]
-            total_df['GeneB'] = split_chimera.iloc[:, 1]
+            # Get the two genes
+            gene1 = split_chimera.iloc[:, 0]
+            gene2 = split_chimera.iloc[:, 1]
+            
+            # Standardize order: GeneA is lexicographically smaller, GeneB is larger
+            # This ensures consistent gene assignment regardless of tool output order
+            genes_sorted = pd.DataFrame({'gene1': gene1, 'gene2': gene2}).apply(
+                lambda row: sorted([row['gene1'], row['gene2']]) if pd.notna(row['gene1']) and pd.notna(row['gene2']) else ['', ''], 
+                axis=1, result_type='expand'
+            )
+            total_df['GeneA'] = genes_sorted.iloc[:, 0]
+            total_df['GeneB'] = genes_sorted.iloc[:, 1]
+            
+            # Update Chimera_ID to reflect standardized order
+            total_df['Chimera_ID'] = total_df['GeneA'] + ':' + total_df['GeneB']
         else:
             # Handle malformed Chimera_IDs by setting them to empty strings
             total_df['GeneA'] = ''
