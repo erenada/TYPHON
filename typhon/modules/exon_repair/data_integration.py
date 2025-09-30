@@ -125,30 +125,24 @@ class DataIntegrator:
         
         # Create context dataframe for provenance tracking (matches filtered set)
         context_df = total_df[['Read_ID', 'Chimera_ID', 'Origin']].copy()
+        # Persist full context for downstream fallback logic (legacy parity support)
+        try:
+            context_path = os.path.join(self.work_dir, 'chimera_context.csv')
+            context_df.to_csv(context_path, index=False)
+            self.logger.info(f"Saved chimera context: {context_path}")
+        except Exception as e:
+            self.logger.warning(f"Could not save chimera context file: {e}")
         
         # 1.3 GTF Annotation Mapping (R code lines 84-96)
         self.logger.info("Step 1.4: GTF annotation mapping...")
         
-        # Split Chimera_ID into GeneA and GeneB with standardized ordering
+        # Split Chimera_ID into GeneA and GeneB
         # R equivalent: Data[c('GeneA', 'GeneB')] <- str_split_fixed(Data$Chimera_ID, ':', 2)
-        # IMPROVEMENT: Standardize gene order to ensure consistent GeneA/GeneB assignment
+        # Preserve original tool output order (no alphabetical standardization)
         split_chimera = total_df['Chimera_ID'].str.split(':', expand=True)
         if split_chimera.shape[1] >= 2:
-            # Get the two genes
-            gene1 = split_chimera.iloc[:, 0]
-            gene2 = split_chimera.iloc[:, 1]
-            
-            # Standardize order: GeneA is lexicographically smaller, GeneB is larger
-            # This ensures consistent gene assignment regardless of tool output order
-            genes_sorted = pd.DataFrame({'gene1': gene1, 'gene2': gene2}).apply(
-                lambda row: sorted([row['gene1'], row['gene2']]) if pd.notna(row['gene1']) and pd.notna(row['gene2']) else ['', ''], 
-                axis=1, result_type='expand'
-            )
-            total_df['GeneA'] = genes_sorted.iloc[:, 0]
-            total_df['GeneB'] = genes_sorted.iloc[:, 1]
-            
-            # Update Chimera_ID to reflect standardized order
-            total_df['Chimera_ID'] = total_df['GeneA'] + ':' + total_df['GeneB']
+            total_df['GeneA'] = split_chimera.iloc[:, 0]
+            total_df['GeneB'] = split_chimera.iloc[:, 1]
         else:
             # Handle malformed Chimera_IDs by setting them to empty strings
             total_df['GeneA'] = ''

@@ -70,7 +70,11 @@ class TranscriptSelector:
         filtered_results = self._filter_and_annotate_transcripts(blast_results, phase2_results['transcript_metadata'])
         
         # 3.3 Gene Order Determination (R code lines 221-225)
-        ordered_results = self._determine_gene_order_and_selection(filtered_results)
+        ordered_results = self._determine_gene_order_and_selection(
+            filtered_results,
+            phase2_results,
+            chimera_library
+        )
         
         # Save outputs before returning results
         self._save_phase3_outputs(ordered_results)
@@ -201,7 +205,7 @@ class TranscriptSelector:
             # Keep only transcripts matching GeneA or GeneB (R code line 212)
             # R equivalent: Data <- filter(Data, Gene==GeneA | Gene==GeneB)
             blast_df = blast_df[
-                (blast_df['Gene'] == blast_df['GeneA']) | 
+                (blast_df['Gene'] == blast_df['GeneA']) |
                 (blast_df['Gene'] == blast_df['GeneB'])
             ]
             
@@ -226,6 +230,8 @@ class TranscriptSelector:
                         continue
                     
                     fields = line.strip().split('\t')
+                    # Legacy parity: rely on first match encountered in file order.
+                    # Only consider rows with feature == transcript (where transcript_name/tag occur)
                     if len(fields) >= 9 and fields[2] == 'transcript':
                         attributes = fields[8]
                         
@@ -240,7 +246,8 @@ class TranscriptSelector:
                             elif attr.startswith('tag'):
                                 tag = attr.split('"')[1]
                         
-                        if transcript_name:
+                        if transcript_name and (transcript_name not in transcript_tags):
+                            # First occurrence wins (matches R's match() first-index behavior)
                             transcript_tags[transcript_name] = tag
             
             self.logger.info(f"Loaded {len(transcript_tags)} transcript tags")
@@ -251,7 +258,9 @@ class TranscriptSelector:
             raise
 
 
-    def _determine_gene_order_and_selection(self, blast_df: pd.DataFrame) -> pd.DataFrame:
+    def _determine_gene_order_and_selection(self, blast_df: pd.DataFrame,
+                                            phase2_results: dict = None,
+                                            chimera_library: pd.DataFrame = None) -> pd.DataFrame:
         """
         Determine gene order and select best transcripts.
         
@@ -295,9 +304,131 @@ class TranscriptSelector:
             data_subset = blast_df.groupby('Pick').first().reset_index()
             
             # Keep only reads with both GeneA and GeneB (R code line 219)
-            # R equivalent: Remove_singles <- Data_subset[Data_subset$Read_ID %in% Data_subset$Read_ID[duplicated(Data_subset$Read_ID)],]
+            # If some reads have only one side, attempt fallback to alternate Chimera_IDs from other tools
             duplicate_read_ids = data_subset['Read_ID'][data_subset['Read_ID'].duplicated()].unique()
             remove_singles = data_subset[data_subset['Read_ID'].isin(duplicate_read_ids)]
+
+            # Fallback: try alternate Chimera_IDs for reads missing one side
+            # Load Phase 1 context and raw BLAST to re-evaluate against alternate GeneA/GeneB
+            try:
+                # Identify reads present in filtered blast_df but missing one side
+                side_counts = (blast_df.assign(side=np.where(blast_df['Gene']==blast_df['GeneA'],'A','B'))
+                               .groupby('Read_ID')['side'].nunique())
+                one_side_reads = set(side_counts[side_counts==1].index.tolist())
+
+                if one_side_reads and chimera_library is not None and phase2_results is not None:
+                    # Load context (all tool chimera IDs by Read_ID)
+                    context_path = os.path.join(self.work_dir, 'chimera_context.csv')
+                    if os.path.exists(context_path):
+                        context_df = pd.read_csv(context_path)
+                        # Priority by origin
+                        origin_priority = {'LongGF': 0, 'JaffaL': 1, 'Genion': 2}
+                        context_df['priority'] = context_df['Origin'].map(origin_priority).fillna(99)
+                    else:
+                        context_df = pd.DataFrame(columns=['Read_ID','Chimera_ID','Origin','priority'])
+
+                    # Load raw BLAST
+                    raw_blast_path = phase2_results.get('blast_results')
+                    raw = pd.read_csv(raw_blast_path, sep='\t', header=None,
+                                      names=["Read_ID","Transcript_ID","%_identity","alignment_length","mismatches","gap_opens","q.start","q.end","s.start","s.end","e.value","bit.score"]) if raw_blast_path else pd.DataFrame()
+                    # Derive Gene from transcript_id
+                    split_result = raw['Transcript_ID'].astype(str).str.rsplit('-', n=1, expand=True) if not raw.empty else pd.DataFrame()
+                    if not split_result.empty and split_result.shape[1] == 2:
+                        raw['Gene'] = split_result[0]
+                    else:
+                        if not raw.empty:
+                            raw['Gene'] = raw['Transcript_ID']
+                    # Map transcript metadata
+                    transcripts_file = phase2_results.get('transcript_metadata', {}).get('transcripts_metadata') if phase2_results.get('transcript_metadata') else None
+                    if transcripts_file and os.path.exists(transcripts_file):
+                        tdf = pd.read_csv(transcripts_file, sep='|', header=None)
+                        if tdf.shape[1] > 8:
+                            tdf = tdf.drop(columns=[8])
+                        lookup_type = tdf.set_index(tdf.columns[4])[tdf.columns[7]]
+                        lookup_len = tdf.set_index(tdf.columns[4])[tdf.columns[6]]
+                        raw['Type'] = raw['Transcript_ID'].map(lookup_type)
+                        raw['T_length'] = raw['Transcript_ID'].map(lookup_len)
+                    else:
+                        raw['Type'] = None
+                        raw['T_length'] = None
+                    # Tags
+                    gtf_tags = self._load_gtf_transcript_tags()
+                    raw['Tag'] = raw['Transcript_ID'].map(gtf_tags)
+
+                    recovered = []
+                    for rid in one_side_reads:
+                        # Candidate chimera IDs sorted by origin priority; include current first for clarity
+                        cand_rows = context_df[context_df['Read_ID']==rid].sort_values(['priority']) if not context_df.empty else pd.DataFrame()
+                        # Ensure unique in order
+                        candidates = cand_rows['Chimera_ID'].tolist() if 'Chimera_ID' in cand_rows else []
+                        # Always put current chimera first if present
+                        current_chim = chimera_library.loc[chimera_library['Read_ID']==rid, 'Chimera_ID']
+                        if not current_chim.empty:
+                            cur_val = current_chim.iloc[0]
+                            if cur_val in candidates:
+                                candidates.remove(cur_val)
+                            candidates = [cur_val] + candidates
+
+                        rid_hits = raw[raw['Read_ID']==rid].copy()
+                        # Filter retained intron
+                        rid_hits = rid_hits[rid_hits['Type'] != 'retained_intron'] if 'Type' in rid_hits else rid_hits
+                        if rid_hits.empty:
+                            continue
+
+                        picked = None
+                        for chim in candidates:
+                            parts = str(chim).split(':')
+                            if len(parts) < 2:
+                                continue
+                            gA, gB = parts[0], parts[1]
+                            sub = rid_hits[(rid_hits['Gene']==gA) | (rid_hits['Gene']==gB)].copy()
+                            sides = sub.assign(LongGF_Order=np.where(sub['Gene']==gA,'A','B')).groupby('LongGF_Order').size()
+                            if sides.get('A',0) > 0 and sides.get('B',0) > 0:
+                                # Apply same sort
+                                sub['Prefer'] = np.where(sub['Tag']=='GENCODE_Primary','A','B')
+                                sub = sub.sort_values(['bit.score','Prefer','T_length'], ascending=[False,True,False])
+                                topA = sub[sub['Gene']==gA].head(1)
+                                topB = sub[sub['Gene']==gB].head(1)
+                                if not topA.empty and not topB.empty:
+                                    # Build rows analogous to data_subset entries
+                                    def build_row(r, order):
+                                        return {
+                                            'Pick': f"{rid}_{order}",
+                                            'Read_ID': rid,
+                                            'Transcript_ID': r['Transcript_ID'],
+                                            'Gene': r['Gene'],
+                                            '%_identity': r['%_identity'],
+                                            'alignment_length': r['alignment_length'],
+                                            'mismatches': r['mismatches'],
+                                            'gap_opens': r['gap_opens'],
+                                            'q.start': r['q.start'],
+                                            'q.end': r['q.end'],
+                                            's.start': r['s.start'],
+                                            's.end': r['s.end'],
+                                            'e.value': r['e.value'],
+                                            'bit.score': r['bit.score'],
+                                            'GeneA': gA,
+                                            'GeneB': gB,
+                                            'Chimera_ID': chim,
+                                            'Prefer': 'A' if r['Tag']=='GENCODE_Primary' else 'B',
+                                            'T_length': r.get('T_length')
+                                        }
+                                    recovered.append(build_row(topA.iloc[0], 'A'))
+                                    recovered.append(build_row(topB.iloc[0], 'B'))
+                                    break
+                        # end candidates loop
+                    # end rid loop
+
+                    if recovered:
+                        rec_df = pd.DataFrame(recovered)
+                        # Merge recovered with existing remove_singles, giving priority to recovered for those reads
+                        # Ensure we have Actual_order assigned later
+                        remove_singles = pd.concat([remove_singles, rec_df], ignore_index=True, sort=False)
+                        # Keep only rows where both A and B exist per read
+                        dup_ids = remove_singles['Read_ID'][remove_singles['Read_ID'].duplicated()].unique()
+                        remove_singles = remove_singles[remove_singles['Read_ID'].isin(dup_ids)]
+            except Exception:
+                pass
             
             # Sort for consistent ordering (R code lines 220-221)
             # R equivalent: Remove_singles <- arrange(Remove_singles, desc(Read_ID), q.start)
