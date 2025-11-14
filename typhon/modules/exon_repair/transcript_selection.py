@@ -6,6 +6,7 @@ Implements R code lines 190-225: Parse BLAST results, filter transcripts,
 and determine chimera gene order.
 
 Authors: Harry Kane, PhD; Eren Ada, PhD
+MODIFIED: 2025-11-13 - Performance optimization for fallback logic
 """
 
 import os
@@ -324,8 +325,11 @@ class TranscriptSelector:
                         # Priority by origin
                         origin_priority = {'LongGF': 0, 'JaffaL': 1, 'Genion': 2}
                         context_df['priority'] = context_df['Origin'].map(origin_priority).fillna(99)
+                        # PERFORMANCE FIX: Pre-group context by Read_ID for O(1) lookups
+                        context_grouped = context_df.groupby('Read_ID')
                     else:
                         context_df = pd.DataFrame(columns=['Read_ID','Chimera_ID','Origin','priority'])
+                        context_grouped = None
 
                     # Load raw BLAST
                     raw_blast_path = phase2_results.get('blast_results')
@@ -354,11 +358,16 @@ class TranscriptSelector:
                     # Tags
                     gtf_tags = self._load_gtf_transcript_tags()
                     raw['Tag'] = raw['Transcript_ID'].map(gtf_tags)
+                    
+                    # PERFORMANCE FIX: Pre-group raw BLAST by Read_ID for O(1) lookups
+                    # This avoids scanning 5M+ rows for each read in the loop
+                    raw_grouped = raw.groupby('Read_ID') if not raw.empty else None
 
                     recovered = []
                     for rid in one_side_reads:
                         # Candidate chimera IDs sorted by origin priority; include current first for clarity
-                        cand_rows = context_df[context_df['Read_ID']==rid].sort_values(['priority']) if not context_df.empty else pd.DataFrame()
+                        # PERFORMANCE FIX: Use grouped lookup instead of filtering entire DataFrame
+                        cand_rows = context_grouped.get_group(rid).sort_values(['priority']) if context_grouped and rid in context_grouped.groups else pd.DataFrame()
                         # Ensure unique in order
                         candidates = cand_rows['Chimera_ID'].tolist() if 'Chimera_ID' in cand_rows else []
                         # Always put current chimera first if present
@@ -369,7 +378,8 @@ class TranscriptSelector:
                                 candidates.remove(cur_val)
                             candidates = [cur_val] + candidates
 
-                        rid_hits = raw[raw['Read_ID']==rid].copy()
+                        # PERFORMANCE FIX: Use grouped lookup instead of filtering entire DataFrame
+                        rid_hits = raw_grouped.get_group(rid).copy() if raw_grouped and rid in raw_grouped.groups else pd.DataFrame()
                         # Filter retained intron
                         rid_hits = rid_hits[rid_hits['Type'] != 'retained_intron'] if 'Type' in rid_hits else rid_hits
                         if rid_hits.empty:
@@ -466,4 +476,5 @@ class TranscriptSelector:
         self.logger.info(f"  Simple selection: {simple_file}")
         
         # Store CSV path for Phase 4
-        self.ordered_results_csv = ordered_file 
+        self.ordered_results_csv = ordered_file
+
