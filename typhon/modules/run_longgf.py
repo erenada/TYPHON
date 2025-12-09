@@ -139,7 +139,7 @@ def run_longgf(fastq_dir, genome, gtf, output_dir, threads=1, keep_intermediate=
             
             # 5. Process LongGF output exactly as in the original pipeline
             log("Processing LongGF output...")
-            run_command(f"sed -n '^/GF/,/SumGF/p' {output_longgf_total} > {os.path.join(output_dir, f'{filename}_mod5.txt')}")
+            run_command(f"sed -n '/^GF/,/SumGF/p' {output_longgf_total} > {os.path.join(output_dir, f'{filename}_mod5.txt')}")
             run_command(f"grep -v 'SumGF' {os.path.join(output_dir, f'{filename}_mod5.txt')} > {os.path.join(output_dir, f'{filename}_mod4.txt')}")
             run_command(f"awk '/^GF/ {{printf \"%s%s \", mypfx, $0; mypfx=\"\\n\"; next}} {{printf \"%s\", $0}} END {{print \" \"}}' {os.path.join(output_dir, f'{filename}_mod4.txt')} > {os.path.join(output_dir, f'{filename}_mod3.txt')}")
             run_command(f"sed 's:^.\\{{3\\}}::g' {os.path.join(output_dir, f'{filename}_mod3.txt')} > {os.path.join(output_dir, f'{filename}_mod2.txt')}")
