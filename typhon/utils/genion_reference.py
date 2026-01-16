@@ -24,7 +24,7 @@ def prepare_genion_reference_files(gtf, transcriptome_fasta, output_dir, threads
             
             # Step 1: Combined sed command for version extraction (matches old pipeline)
             ID = "(ENS(MUS)?[GTE][0-9]+)\\.([0-9]+)"
-            sed1_cmd = f"""cat {gtf} | sed -E 's/gene_id "{ID}";/gene_id "\\1"; gene_version "\\3";/' | sed -E 's/transcript_id "{ID}";/transcript_id "\\1"; transcript_version "\\3";/' | sed -E 's/exon_id "{ID}";/exon_id "\\1"; exon_version "\\3";/' > {gtf_mod1}"""
+            sed1_cmd = f"""{'zcat' if gtf.endswith('.gz') else 'cat'} {gtf} | sed -E 's/gene_id "{ID}";/gene_id "\\1"; gene_version "\\3";/' | sed -E 's/transcript_id "{ID}";/transcript_id "\\1"; transcript_version "\\3";/' | sed -E 's/exon_id "{ID}";/exon_id "\\1"; exon_version "\\3";/' > {gtf_mod1}"""
             
             # Step 2: Chromosome name cleanup (matches old pipeline)
             sed2_cmd = f"sed 's/^chrM/MT/;s/^chrX/X/;s/^chrY/Y/;s/^chr//' {gtf_mod1} > {gtf_mod2}"
