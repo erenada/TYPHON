@@ -17,30 +17,34 @@ import logging
 import subprocess
 import shutil
 import glob
+import gzip
 from pathlib import Path
 
 
 def convert_fastq_to_fasta(fastq_file, output_dir):
     """
     Convert FASTQ to FASTA using sed equivalent.
-    
+    Handles both compressed (.gz) and uncompressed FASTQ files.
     Original bash command:
     sed -n '1~4s:^@:>:p;2~4p' "$file" >> "$file.fasta"
-    
-    Args:
-        fastq_file: Path to input FASTQ file
-        output_dir: Directory to write FASTA file
-    
-    Returns:
-        Path to generated FASTA file
     """
     fastq_path = Path(fastq_file)
-    fasta_file = os.path.join(output_dir, f"{fastq_path.stem}.fasta")
+    # Remove .gz extension if present for the output name
+    stem = fastq_path.stem
+    if stem.endswith('.fastq') or stem.endswith('.fq'):
+        stem = stem.rsplit('.', 1)[0]
+    fasta_file = os.path.join(output_dir, f"{stem}.fasta")
     
     logging.info(f"Converting {fastq_path.name} to FASTA format...")
     
     try:
-        with open(fastq_file, 'r') as infile, open(fasta_file, 'w') as outfile:
+        # Determine if file is gzipped
+        if fastq_file.endswith('.gz'):
+            infile = gzip.open(fastq_file, 'rt')  # 'rt' for text mode
+        else:
+            infile = open(fastq_file, 'r')
+        
+        with infile, open(fasta_file, 'w') as outfile:
             lines = infile.readlines()
             
             # Process every 4th line starting from line 1 (header) and line 2 (sequence)
@@ -265,7 +269,10 @@ def run_jaffal(fastq_dir, jaffal_dir, output_dir, threads=1, keep_intermediate=F
         # Step 2: Copy FASTQ files to fasta_files directory
         # Exact parity with old pipeline: include only .fastq (no .fq), sorted lexicographically by basename
         fastq_files = sorted(
-            glob.glob(os.path.join(fastq_dir, '*.fastq')),
+            glob.glob(os.path.join(fastq_dir, '*.fastq')) +
+            glob.glob(os.path.join(fastq_dir, '*.fastq.gz')) +
+            glob.glob(os.path.join(fastq_dir, '*.fq')) +
+            glob.glob(os.path.join(fastq_dir, '*.fq.gz')),
             key=lambda p: os.path.basename(p)
         )
         
