@@ -286,10 +286,19 @@ class BlastSetupProcessor:
         
         try:
             # Step 1: cut -d"|" -f5- transcripts.fa > blast_ref_reduced_first_line.fa
-            cmd1 = ['cut', '-d|', '-f5-', transcriptome_fasta]
-            self.logger.info(f"Running: {' '.join(cmd1)} > {blast_ref1}")
-            with open(blast_ref1, 'w') as f:
-                subprocess.run(cmd1, stdout=f, check=True, text=True)
+            # Handle gzipped or uncompressed transcriptome files
+            if transcriptome_fasta.endswith('.gz'):
+                # Decompress on-the-fly and pipe to cut
+                cmd1 = f"zcat {transcriptome_fasta} | cut -d'|' -f5-"
+                self.logger.info(f"Running: {cmd1} > {blast_ref1}")
+                with open(blast_ref1, 'w') as f:
+                    subprocess.run(cmd1, stdout=f, shell=True, check=True, text=True)
+            else:
+                # Direct processing for uncompressed files
+                cmd1 = ['cut', '-d|', '-f5-', transcriptome_fasta]
+                self.logger.info(f"Running: {' '.join(cmd1)} > {blast_ref1}")
+                with open(blast_ref1, 'w') as f:
+                    subprocess.run(cmd1, stdout=f, check=True, text=True)
             
             # Step 2: sed '/|/ s/^/>/' blast_ref_reduced_first_line.fa > blast_ref_reduced_first_line2.fa
             cmd2 = ['sed', '/|/ s/^/>/', blast_ref1]
@@ -491,7 +500,9 @@ class BlastSetupProcessor:
         self.logger.info("Extracting transcript lengths...")
         
         try:
-            with open(fasta_file, 'r') as infile, open(output_file, 'w') as outfile:
+            # Handle gzipped or uncompressed FASTA files
+            fasta_handle = gzip.open(fasta_file, 'rt') if fasta_file.endswith('.gz') else open(fasta_file, 'r')
+            with fasta_handle as infile, open(output_file, 'w') as outfile:
                 seqlen = 0
                 first_header = True
                 
