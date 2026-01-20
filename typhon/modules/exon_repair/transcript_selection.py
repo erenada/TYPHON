@@ -11,6 +11,7 @@ MODIFIED: 2025-11-13 - Performance optimization for fallback logic
 
 import os
 import logging
+import gzip
 from typing import Dict, List, Tuple, Optional
 
 try:
@@ -225,7 +226,8 @@ class TranscriptSelector:
         try:
             transcript_tags = {}
             
-            with open(self.gtf_file, 'r') as f:
+            gtf_handle = gzip.open(self.gtf_file, 'rt') if self.gtf_file.endswith('.gz') else open(self.gtf_file, 'r')
+            with gtf_handle as f:
                 for line in f:
                     if line.startswith('#'):
                         continue
