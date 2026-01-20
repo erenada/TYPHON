@@ -11,6 +11,7 @@ import os
 import sys
 import logging
 import subprocess
+import gzip
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
@@ -453,7 +454,8 @@ class BlastSetupProcessor:
                 f'--max-mem={min(32, self.config.get("options", {}).get("max_memory_gb", 32))}G'
             ]
             self.logger.info(f"Running: {' '.join(cmd3)} < {self.gtf_file} > {exons_bed}")
-            with open(self.gtf_file, 'r') as infile, open(exons_bed, 'w') as outfile:
+            gtf_handle = gzip.open(self.gtf_file, 'rt') if self.gtf_file.endswith('.gz') else open(self.gtf_file, 'r')
+            with gtf_handle as infile, open(exons_bed, 'w') as outfile:
                 subprocess.run(cmd3, stdin=infile, stdout=outfile, check=True, text=True)
             
             # Cleanup prep file
