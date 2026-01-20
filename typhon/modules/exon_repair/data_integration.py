@@ -10,6 +10,7 @@ Authors: Harry Kane, PhD; Eren Ada, PhD
 
 import os
 import logging
+import gzip
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
@@ -381,7 +382,8 @@ class DataIntegrator:
             # Parse GTF file for gene features
             genes = []
             
-            with open(self.gtf_file, 'r') as f:
+            file_handle = gzip.open(self.gtf_file, 'rt') if self.gtf_file.endswith('.gz') else open(self.gtf_file, 'r')
+            with file_handle as f:
                 for line in f:
                     if line.startswith('#'):
                         continue
