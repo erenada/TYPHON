@@ -456,16 +456,25 @@ class BlastSetupProcessor:
             
             # Step 3: Convert GTF to BED format for exons
             # convert2bed --input=gtf --attribute-key=exon_id --max-mem=32G < annotation.gtf > all_exons.bed
-            cmd3 = [
-                'convert2bed', 
-                '--input=gtf', 
-                '--attribute-key=exon_id',
-                f'--max-mem={min(32, self.config.get("options", {}).get("max_memory_gb", 32))}G'
-            ]
-            self.logger.info(f"Running: {' '.join(cmd3)} < {self.gtf_file} > {exons_bed}")
-            gtf_handle = gzip.open(self.gtf_file, 'rt') if self.gtf_file.endswith('.gz') else open(self.gtf_file, 'r')
-            with gtf_handle as infile, open(exons_bed, 'w') as outfile:
-                subprocess.run(cmd3, stdin=infile, stdout=outfile, check=True, text=True)
+            max_mem = min(32, self.config.get("options", {}).get("max_memory_gb", 32))
+            
+            if self.gtf_file.endswith('.gz'):
+                # Use zcat for gzipped files with shell piping
+                cmd3 = f"zcat {self.gtf_file} | convert2bed --input=gtf --attribute-key=exon_id --max-mem={max_mem}G"
+                self.logger.info(f"Running: {cmd3} > {exons_bed}")
+                with open(exons_bed, 'w') as outfile:
+                    subprocess.run(cmd3, shell=True, stdout=outfile, check=True, text=True)
+            else:
+                # Direct stdin redirection for uncompressed files
+                cmd3 = [
+                    'convert2bed', 
+                    '--input=gtf', 
+                    '--attribute-key=exon_id',
+                    f'--max-mem={max_mem}G'
+                ]
+                self.logger.info(f"Running: {' '.join(cmd3)} < {self.gtf_file} > {exons_bed}")
+                with open(self.gtf_file, 'r') as infile, open(exons_bed, 'w') as outfile:
+                    subprocess.run(cmd3, stdin=infile, stdout=outfile, check=True, text=True)
             
             # Cleanup prep file
             if os.path.exists(transcripts_prep):
