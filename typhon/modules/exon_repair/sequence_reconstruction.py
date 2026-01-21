@@ -14,6 +14,8 @@ import os
 import sys
 import logging
 import subprocess
+import gzip
+import shutil
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -131,6 +133,17 @@ class SequenceReconstructor:
         """
         self.logger.info("Step 5.1: Extracting sequences with bedtools getfasta...")
         
+        # Handle gzipped genome files (bedtools requires uncompressed or bgzipped files)
+        genome_for_bedtools = self.genome_fasta
+        if self.genome_fasta.endswith('.gz'):
+            decompressed = os.path.join(self.work_dir, 'temp_genome_decompressed.fa')
+            self.logger.info("Genome is gzip-compressed; decompressing for bedtools compatibility...")
+            with gzip.open(self.genome_fasta, 'rb') as f_in:
+                with open(decompressed, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            genome_for_bedtools = decompressed
+            self.logger.info(f"Decompressed genome to: {genome_for_bedtools}")
+        
         # Output file paths
         geneA_fasta = os.path.join(self.work_dir, 'Fasta_geneA_not_collapse.fa')
         geneB_fasta = os.path.join(self.work_dir, 'Fasta_geneB_not_collapse.fa')
@@ -138,7 +151,7 @@ class SequenceReconstructor:
         try:
             # Extract GeneA sequences
             cmd_geneA = [
-                'bedtools', 'getfasta', '-s', '-fi', str(self.genome_fasta),
+                'bedtools', 'getfasta', '-s', '-fi', str(genome_for_bedtools),
                 '-bed', str(bed_file_A), '-fo', str(geneA_fasta), '-nameOnly'
             ]
             self.logger.info(f"Running: {' '.join(cmd_geneA)}")
@@ -146,7 +159,7 @@ class SequenceReconstructor:
             
             # Extract GeneB sequences  
             cmd_geneB = [
-                'bedtools', 'getfasta', '-s', '-fi', str(self.genome_fasta),
+                'bedtools', 'getfasta', '-s', '-fi', str(genome_for_bedtools),
                 '-bed', str(bed_file_B), '-fo', str(geneB_fasta), '-nameOnly'
             ]
             self.logger.info(f"Running: {' '.join(cmd_geneB)}")
@@ -163,14 +176,25 @@ class SequenceReconstructor:
             geneB_count = count_sequences_in_fasta(geneB_fasta)
             self.logger.info(f"Extracted {geneA_count} GeneA segments and {geneB_count} GeneB segments")
             
+            # Cleanup temporary decompressed genome if we created one
+            if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
+                os.remove(genome_for_bedtools)
+                self.logger.info("Cleaned up temporary decompressed genome file")
+            
             return geneA_fasta, geneB_fasta
             
         except subprocess.CalledProcessError as e:
             self.logger.error(f"bedtools getfasta failed: {e}")
             self.logger.error(f"stderr: {e.stderr}")
+            # Cleanup on error too
+            if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
+                os.remove(genome_for_bedtools)
             raise
         except Exception as e:
             self.logger.error(f"Sequence extraction failed: {e}")
+            # Cleanup on error too
+            if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
+                os.remove(genome_for_bedtools)
             raise
 
 
