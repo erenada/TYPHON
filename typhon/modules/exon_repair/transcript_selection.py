@@ -446,10 +446,8 @@ class TranscriptSelector:
             # R equivalent: Remove_singles <- arrange(Remove_singles, desc(Read_ID), q.start)
             remove_singles = remove_singles.sort_values(['Read_ID', 'q.start'], ascending=[False, True])
             
-            # CRITICAL FIX: Use LongGF_Order as Actual_order instead of blind alternating pattern
-            # The LongGF_Order correctly identifies GeneA vs GeneB based on Chimera_ID position
-            # This fixes the bug where q.start sorting doesn't guarantee gene order
-            remove_singles['Actual_order'] = remove_singles['LongGF_Order']
+            # Restored Actual_order being used instead of LongGF order - use of biological gene order (based on q.start) is intended, as the GeneA:GeneB Chimera_IDs from the tools can wrongly ordered
+            remove_singles['Actual_order'] = remove_singles.groupby('Read_ID').cumcount().map({0: 'A', 1: 'B'})
             
             self.logger.info(f"Selected transcripts for {len(remove_singles)} reads with both genes")
             
