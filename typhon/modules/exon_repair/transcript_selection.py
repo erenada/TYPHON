@@ -442,14 +442,59 @@ class TranscriptSelector:
             except Exception:
                 pass
             
+            # ===================================================================
+            # Ensure remove_singles has no singles (R code line 219)
+            # This must happen outside the try-except block to guarantee data integrity
+            # R equivalent: Remove_singles <- Data_subset[Data_subset$Read_ID %in% 
+            #                                             Data_subset$Read_ID[duplicated(Data_subset$Read_ID)],]
+            # ===================================================================
+            duplicate_read_ids_final = remove_singles['Read_ID'][remove_singles['Read_ID'].duplicated()].unique()
+            remove_singles = remove_singles[remove_singles['Read_ID'].isin(duplicate_read_ids_final)]
+            
             # Sort for consistent ordering (R code lines 220-221)
             # R equivalent: Remove_singles <- arrange(Remove_singles, desc(Read_ID), q.start)
             remove_singles = remove_singles.sort_values(['Read_ID', 'q.start'], ascending=[False, True])
             
+            # R equivalent: Remove_singles$Actual_order <- rep(c("A", "B"), length.out = nrow(Remove_singles))
+            # Use q.start position to determine biological order (first = A, second = B per Read_ID)
             # Restored Actual_order being used instead of LongGF order - use of biological gene order (based on q.start) is intended, as the GeneA:GeneB Chimera_IDs from the tools can wrongly ordered
             remove_singles['Actual_order'] = remove_singles.groupby('Read_ID').cumcount().map({0: 'A', 1: 'B'})
             
-            self.logger.info(f"Selected transcripts for {len(remove_singles)} reads with both genes")
+            # ===================================================================
+            # Ensure every Read_ID has EXACTLY 2 entries (A and B)
+            # Matches R code guarantee: every Read_ID appears exactly twice after line 44
+            # ===================================================================
+            read_entry_counts = remove_singles.groupby('Read_ID').size()
+            actual_order_counts = remove_singles.groupby('Read_ID')['Actual_order'].nunique()
+            
+            # Check 1: Each Read_ID must have exactly 2 entries (not 1, not 3+)
+            # Check 2: Each Read_ID must have 2 distinct Actual_order values (A and B)
+            invalid_reads = (read_entry_counts != 2) | (actual_order_counts != 2)
+            
+            if invalid_reads.any():
+                invalid_read_ids = invalid_reads[invalid_reads].index
+                self.logger.warning(
+                    f"Found {len(invalid_read_ids)} reads with incorrect structure after filtering. "
+                    f"This indicates a data integrity issue. Removing these reads."
+                )
+                # Remove reads that don't have exactly 2 entries with both A and B
+                valid_read_ids = (~invalid_reads)[~invalid_reads].index
+                remove_singles = remove_singles[remove_singles['Read_ID'].isin(valid_read_ids)]
+            
+            # Additional sanity check: verify Actual_order values are only 'A' and 'B'
+            unique_actual_orders = remove_singles['Actual_order'].unique()
+            if not set(unique_actual_orders).issubset({'A', 'B'}):
+                unexpected_orders = set(unique_actual_orders) - {'A', 'B'}
+                self.logger.error(
+                    f"Unexpected Actual_order values found: {unexpected_orders}. "
+                    f"Expected only 'A' and 'B'."
+                )
+                raise ValueError(f"Data integrity check failed: Unexpected Actual_order values {unexpected_orders}")
+            
+            final_read_count = len(remove_singles['Read_ID'].unique())
+            self.logger.info(f"✓ Selected transcripts for {final_read_count} reads with both genes (A and B)")
+            self.logger.info(f"✓ Total transcript entries: {len(remove_singles)} (2 per read)")
+            self.logger.info(f"✓ Data integrity verified: All reads have exactly 2 entries with Actual_order A and B")
             
             return remove_singles
             
