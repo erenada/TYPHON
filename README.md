@@ -10,7 +10,7 @@
 
 ## Overview
 
-TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing sequencing data. It integrates three fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for sequence-based validation.
+TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing data. It integrates three fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for sequence-based validation.
 
 **Key Features:**
 - **Multi-tool integration** - Combines three fusion detection algorithms
