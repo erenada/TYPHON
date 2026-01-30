@@ -10,7 +10,7 @@
 
 ## Overview
 
-TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing data. It integrates three fusion detection tools (LongGF, Genion, JaffaL) with a five-phase exon repair protocol for sequence-based validation.
+TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing data. It integrates three fusion detection tools (LongGF, Genion, JAFFAL) with a five-phase exon repair protocol for sequence-based validation.
 
 **Key Features:**
 - **Multi-tool integration** - Combines three fusion detection algorithms
@@ -27,7 +27,7 @@ TYPHON is named after the mythological father of the Chimera. Like the mythologi
 ### Prerequisites
 - Linux (Ubuntu 18.04+)
 - Conda/Mamba package manager
-- 16+ GB RAM (32+ GB recommended for large datasets)
+- 32+ GB RAM (64+ GB recommended for large datasets or if other processes running etc.)
 - 50+ GB free disk space (minimum)
 - Java 11+ and Perl rename utility (installation instructions below)
 
@@ -75,20 +75,19 @@ cp config_template.yaml config.yaml
 ```
 
 **Essential setup:**
-1. Update file paths in `references:` section (genome, GTF, transcriptome)
-2. Set input FASTQ directory path
-3. Configure JaffaL reference files (see [JaffaL Reference Setup Guide](docs/jaffal_reference_setup.md))
-4. Adjust thread counts and memory for your system
+1. Download your GENCODE reference files of interest (see https://www.gencodegenes.org/). Currently, TYPHON only supports GENCODE references, support for ENSEMBL and other formats is planned for the future.
+2. Update file paths in the `references:` section of the config.yaml file (genome, GTF, transcriptome). The config.yaml is used to specify all of the information that TYPHON requires.
+3. Set input FASTQ directory path.
+4. Configure JAFFAL reference files (see [JAFFAL Reference Setup Guide](docs/jaffal_reference_setup.md)).
+5. Adjust the thread counts and memory for your system.
 
-**For detailed configuration options, see: [Configuration Guide](docs/configuration.md)**
+## JAFFAL Reference Files
 
-## JaffaL Reference Files
-
-JaffaL requires four specific reference files from UCSC databases: genome FASTA (`.fa.gz`), transcriptome FASTA (`.fasta`), annotation BED (`.bed`), and annotation TAB (`.tab`).
+JAFFAL requires four specific reference files from UCSC databases: genome FASTA (`.fa.gz`), transcriptome FASTA (`.fasta`), annotation BED (`.bed`), and annotation TAB (`.tab`).
 
 **CRITICAL:** All files must use the **same genome build** and **annotation version** as your other reference files.
 
-**For complete download instructions, see: [JaffaL Reference Files Setup Guide](docs/jaffal_reference_setup.md)**
+**For complete download instructions, see: [JAFFAL Reference Files Setup Guide](docs/jaffal_reference_setup.md)**
 
 ### Complete Setup
 
@@ -97,7 +96,7 @@ After configuring `config.yaml`, run the setup scripts:
 # Setup custom Genion (reads paths from config.yaml)
 python setup_genion.py
 
-# Setup JaffaL (reads paths from config.yaml)
+# Setup JAFFAL (reads paths from config.yaml)
 python setup_jaffal.py
 
 # Verify installation
@@ -141,10 +140,10 @@ python typhon_main.py --dry-run
 ### LongGF
 Direct RNA-seq fusion detection using minimap2 alignments. Identifies fusion candidates through split alignments with configurable overlap thresholds and pseudogene filtering.
 
-### Custom Genion
-Graph-based fusion detection with TYPHON-specific enhancements. Builds splice graphs from SAM alignments with enhanced debug output and failure analysis.
+### Genion (slightly modified for usage with TYPHON)
+Graph-based fusion detection with TYPHON-specific enhancements. Builds splice graphs from SAM alignments with enhanced debug output and failure analysis. Slightly modified during TYPHON setup to enable the inclusion of chimeric RNA reads which normally fail to pass Genion's stringent filtering protocols.
 
-### JaffaL (JAFFA-Long)
+### JAFFAL (Long read fusion detection protocol of JAFFA)
 Assembly-based fusion detection optimized for long-read data. Uses bpipe workflow with Velvet/Oases assembly and configurable memory management for large datasets.
 
 ### Exon Repair Protocol
@@ -201,7 +200,7 @@ results/
 ## Key Output Files
 
 **Primary Results (in `exon_repair/` directory):**
-- `All_chRNAs_passing_blast_exon_repair.csv/.xlsx` - Validated chimeras with chromosomal classification, breakpoint coordinates, and tool origin tracking
+- `All_chRNAs_passing_blast_exon_repair.csv.xlsx` - Validated chimeras with chromosomal classification, breakpoint coordinates, and tool origin tracking
 - `Merged_seqs_exon_repair_renamed.fa` - Reconstructed chimeric sequences with breakpoint coordinates
 
 These are the primary outputs of the exon repair module and can be used for downstream analysis.
@@ -223,13 +222,13 @@ These are the primary outputs of the exon repair module and can be used for down
 **Common Errors:**
 - **Path not found:** Use absolute paths in configuration
 - **Missing SAM files:** Run LongGF before Genion
-- **JaffaL setup failure:** Check Java 11+ installation and JaffaL reference files
-- **Out of memory errors:** Enable `process_samples_sequentially: true` for JaffaL
+- **JAFFAL setup failure:** Check Java 11+ installation and JAFFAL reference files
+- **Out of memory errors:** Enable `process_samples_sequentially: true` for JAFFAL
 
 ## Performance Notes
 
 - **Storage:** Requires 2-3x input FASTQ size for temporary processing space
-- **Memory:** Enable `process_samples_sequentially: true` for JaffaL on memory-constrained systems  
+- **Memory:** Enable `process_samples_sequentially: true` for JAFFAL on memory-constrained systems  
 - **Optimization:** SSD storage recommended for faster I/O performance
 
 ## Citations and References
@@ -248,7 +247,7 @@ TYPHON integrates several published bioinformatics tools. Please cite the origin
 **Genion** (Gene fusion detection for long reads):
 > Karaoglanoglu F, Chauve C, Hach F. Genion, an accurate tool to detect gene fusion from long transcriptomics reads. BMC Genomics. 2022;23:144. doi:10.1186/s12864-022-08339-5.
 
-**JAFFA/JaffaL** (Fusion gene detection):
+**JAFFA/JAFFAL** (Fusion gene detection):
 > Davidson NM, Majewski IJ, Oshlack A. JAFFA: High sensitivity transcriptome-focused fusion gene detection. Genome Med. 2015;7:43. doi:10.1186/s13073-015-0167-x.
 > 
 > Davidson NM, Chen Y, Sadras T, et al. JAFFAL: detecting fusion genes with long-read transcriptome sequencing. Genome Biol. 2022;23:10. doi:10.1186/s13059-021-02588-5.
@@ -258,7 +257,7 @@ TYPHON integrates several published bioinformatics tools. Please cite the origin
 >
 > Camacho C, Coulouris G, Avagyan V, Ma N, Papadopoulos J, Bealer K, Madden TL. BLAST+: architecture and applications. BMC Bioinformatics. 2009;10:421. doi:10.1186/1471-2105-10-421.
 > 
-**Minimap2** (Sequence alignment - used for input to/by LongGF, Genion, and JaffaL):
+**Minimap2** (Sequence alignment - used for input to/by LongGF, Genion, and JAFFAL):
 > Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018;34(18):3094-3100. doi:10.1093/bioinformatics/bty191.
 
 ### Supporting Tools
@@ -278,19 +277,19 @@ TYPHON integrates several published bioinformatics tools. Please cite the origin
 **Biopython** (Python operations):
 > Cock PJA, et al. Biopython: freely available Python tools for computational molecular biology and bioinformatics. Bioinformatics. 2009;25(11):1422-3. doi: 10.1093/bioinformatics/btp163.
 >
-**Bowtie2** (Used by JaffaL):
+**Bowtie2** (Used by JAFFAL):
 > Langmead B, Salzberg SL. Fast gapped-read alignment with Bowtie 2. Nat Methods. 2012;9(4):357-9. doi: 10.1038/nmeth.1923. 
 >
-**Trimmomatic** (Used by JaffaL):
+**Trimmomatic** (Used by JAFFAL):
 > Bolger AM, Lohse M, Usadel B. Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics. 2014;30(15):2114-20. doi: 10.1093/bioinformatics/btu170. 
 >
-**Velvet** (Used by JaffaL):
+**Velvet** (Used by JAFFAL):
 > Zerbino DR, Birney E. Velvet: algorithms for de novo short read assembly using de Bruijn graphs. Genome Res. 2008;18(5):821-9. doi: 10.1101/gr.074492.107. 
 >
-**Oases** (Used by JaffaL):
+**Oases** (Used by JAFFAL):
 > Schulz MH, et al. Oases: robust de novo RNA-seq assembly across the dynamic range of expression levels. Bioinformatics. 2012;28(8):1086-92. doi: 10.1093/bioinformatics/bts094.
 >
-**BLAT** (Used by JaffaL):
+**BLAT** (Used by JAFFAL):
 > Kent WJ. BLAT--the BLAST-like alignment tool. Genome Res. 2002;12(4):656-64. doi: 10.1101/gr.229202.
 
 ## License
