@@ -242,21 +242,56 @@ TYPHON integrates several published bioinformatics tools. Please cite the origin
 
 ### Core Tools
 
-**LongGF** (Long-read Gene Fusion detection):
-> Liu Q, Hu Y, Stucky A, Fang L, Zhong JF, Wang K. LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. BMC Genomics. 2020;21:793. doi:10.1186/s12864-020-07207-4
+**LongGF** (Long-read gene fusion detection):
+> Liu Q, Hu Y, Stucky A, Fang L, Zhong JF, Wang K. LongGF: computational algorithm and software tool for fast and accurate detection of gene fusions by long-read transcriptome sequencing. BMC Genomics. 2020;21:793. doi:10.1186/s12864-020-07207-4.
 
 **Genion** (Gene fusion detection for long reads):
-> Karaoglanoglu F, Chauve C, Hach F. Genion, an accurate tool to detect gene fusion from long transcriptomics reads. BMC Genomics. 2022;23:144. doi:10.1186/s12864-022-08339-5
+> Karaoglanoglu F, Chauve C, Hach F. Genion, an accurate tool to detect gene fusion from long transcriptomics reads. BMC Genomics. 2022;23:144. doi:10.1186/s12864-022-08339-5.
 
 **JAFFA/JaffaL** (Fusion gene detection):
-> Davidson NM, Majewski IJ, Oshlack A. JAFFA: High sensitivity transcriptome-focused fusion gene detection. Genome Med. 2015;7:43. doi:10.1186/s13073-015-0167-x
+> Davidson NM, Majewski IJ, Oshlack A. JAFFA: High sensitivity transcriptome-focused fusion gene detection. Genome Med. 2015;7:43. doi:10.1186/s13073-015-0167-x.
 > 
-> Davidson NM, Chen Y, Sadras T, et al. JAFFAL: detecting fusion genes with long-read transcriptome sequencing. Genome Biol. 2022;23:10. doi:10.1186/s13059-021-02588-5
+> Davidson NM, Chen Y, Sadras T, et al. JAFFAL: detecting fusion genes with long-read transcriptome sequencing. Genome Biol. 2022;23:10. doi:10.1186/s13059-021-02588-5.
+>
+**BLAST+** (Alignment of chimeric transcripts to the reference transcriptome for exon repair):
+> Altschul SF, Gish W, Miller W, Myers EW, Lipman DJ. Basic local alignment search tool. J Mol Biol. 1990;215:403-10. doi:10.1016/S0022-2836(05)80360-2.
+>
+> Camacho C, Coulouris G, Avagyan V, Ma N, Papadopoulos J, Bealer K, Madden TL. BLAST+: architecture and applications. BMC Bioinformatics. 2009;10:421. doi:10.1186/1471-2105-10-421.
+> 
+**Minimap2** (Sequence alignment - used for input to/by LongGF, Genion, and JaffaL):
+> Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018;34(18):3094-3100. doi:10.1093/bioinformatics/bty191.
 
 ### Supporting Tools
 
-**Minimap2** (Sequence alignment - used by LongGF and JaffaL):
-> Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018;34(18):3094-3100. doi:10.1093/bioinformatics/bty191
+**SAMtools** (File format conversiona and data processing):
+> Danecek P, et al. Twelve years of SAMtools and BCFtools. Gigascience. 2021;10(2):giab008. doi: 10.1093/gigascience/giab008.
+>
+**BEDTools** (Pulldown of sequence information from reference files):
+> Quinlan AR, Hall IM. BEDTools: a flexible suite of utilities for comparing genomic features. Bioinformatics. 2010;26(6):841-2. doi:10.1093/bioinformatics/btq033.
+>
+**SeqKit** (FASTA/Q file manipulation and data processing):
+> Shen W, et al. SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation. PLoS ONE. 2016;11(10):e0163962. doi:10.1371/journal.pone.0163962.
+>
+**BEDOPS** (Data processing):
+> Neph S, et al. BEDOPS: high-performance genomic feature operations. Bioinformatics. 2012;28(14):1919-20. doi: 10.1093/bioinformatics/bts277.
+>
+**Biopython** (Python operations):
+> Cock PJA, et al. Biopython: freely available Python tools for computational molecular biology and bioinformatics. Bioinformatics. 2009;25(11):1422-3. doi: 10.1093/bioinformatics/btp163.
+>
+**Bowtie2** (Used by JaffaL):
+> Langmead B, Salzberg SL. Fast gapped-read alignment with Bowtie 2. Nat Methods. 2012;9(4):357-9. doi: 10.1038/nmeth.1923. 
+>
+**Trimmomatic** (Used by JaffaL):
+> Bolger AM, Lohse M, Usadel B. Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics. 2014;30(15):2114-20. doi: 10.1093/bioinformatics/btu170. 
+>
+**Velvet** (Used by JaffaL):
+> Zerbino DR, Birney E. Velvet: algorithms for de novo short read assembly using de Bruijn graphs. Genome Res. 2008;18(5):821-9. doi: 10.1101/gr.074492.107. 
+>
+**Oases** (Used by JaffaL):
+> Schulz MH, et al. Oases: robust de novo RNA-seq assembly across the dynamic range of expression levels. Bioinformatics. 2012;28(8):1086-92. doi: 10.1093/bioinformatics/bts094.
+>
+**BLAT** (Used by JaffaL):
+> Kent WJ. BLAT--the BLAST-like alignment tool. Genome Res. 2002;12(4):656-64. doi: 10.1101/gr.229202.
 
 ## License
 
