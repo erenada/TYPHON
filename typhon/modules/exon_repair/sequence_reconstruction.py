@@ -83,7 +83,7 @@ class SequenceReconstructor:
             
             # 5.4: Final filtering and status assignment
             filtered_results = self._filter_and_assign_status(
-                phase4_results['summary_data'], 
+                phase4_results, 
                 chimera_library
             )
             
@@ -295,10 +295,13 @@ class SequenceReconstructor:
             raise
 
 
-    def _filter_and_assign_status(self, summary_data: pd.DataFrame, 
+    def _filter_and_assign_status(self, phase4_results: dict, 
                                  chimera_library: pd.DataFrame) -> dict:
         """
         Filter original chimera library by passing reads and assign chromosomal status.
+        
+        CRITICAL FIX: Only include reads that have BOTH Gene A AND Gene B breakpoint exons.
+        This matches the R workflow where merge_seq.py implicitly filters to reads with both genes.
         
         Implements R workflow lines 298-308:
         ChRNAs <- subset(Chimera_library, Chimera_library$Read_ID %in% Summary_total$Read_ID)
@@ -306,7 +309,7 @@ class SequenceReconstructor:
                                           "Intrachromosomal", "Interchromosomal")
         
         Args:
-            summary_data: Summary data from Phase 4 with passing Read_IDs
+            phase4_results: Phase 4 results containing breakpoint_A and breakpoint_B data
             chimera_library: Original chimera library from Phase 1
             
         Returns:
@@ -315,9 +318,15 @@ class SequenceReconstructor:
         self.logger.info("Step 5.4: Final filtering and chromosomal status assignment...")
         
         try:
-            # Get set of reads that passed all processing steps
-            passing_reads = set(summary_data['Read_ID'].unique())
-            self.logger.info(f"Filtering {len(chimera_library)} total chimeras by {len(passing_reads)} passing reads")
+            # CRITICAL FIX: Only keep reads that have BOTH Gene A AND Gene B breakpoint exons
+            # This ensures every chimera in the output has valid exon mapping for both genes
+            reads_with_geneA = set(phase4_results['breakpoint_A']['Read_ID'].unique())
+            reads_with_geneB = set(phase4_results['breakpoint_B']['Read_ID'].unique())
+            passing_reads = reads_with_geneA & reads_with_geneB  # INTERSECTION, not union
+            
+            self.logger.info(f"Reads with Gene A breakpoint: {len(reads_with_geneA)}")
+            self.logger.info(f"Reads with Gene B breakpoint: {len(reads_with_geneB)}")
+            self.logger.info(f"Filtering {len(chimera_library)} total chimeras by {len(passing_reads)} passing reads (with BOTH breakpoints)")
             
             # Filter chimera library to only passing reads
             filtered_chimeras = chimera_library[chimera_library['Read_ID'].isin(passing_reads)].copy()

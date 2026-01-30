@@ -343,6 +343,18 @@ def run_phase4_exon_processing(selected_transcripts: pd.DataFrame, exon_bed_path
         logger.info("Step 4.5: Selecting breakpoint exons")
         breakpoint_A, breakpoint_B = select_breakpoint_exons(transcript_exon_df)
         
+        # CRITICAL FIX: Filter to intersection - only reads with BOTH Gene A AND Gene B breakpoints
+        reads_with_both_breakpoints = set(breakpoint_A['Read_ID'].unique()) & set(breakpoint_B['Read_ID'].unique())
+        logger.info(f"Filtering to {len(reads_with_both_breakpoints)} reads with BOTH Gene A and Gene B breakpoints")
+        logger.info(f"  - Reads with Gene A breakpoints: {len(breakpoint_A)}")
+        logger.info(f"  - Reads with Gene B breakpoints: {len(breakpoint_B)}")
+        logger.info(f"  - Reads with both (intersection): {len(reads_with_both_breakpoints)}")
+        
+        # Filter all datasets to only include reads with both breakpoints
+        breakpoint_A = breakpoint_A[breakpoint_A['Read_ID'].isin(reads_with_both_breakpoints)].copy()
+        breakpoint_B = breakpoint_B[breakpoint_B['Read_ID'].isin(reads_with_both_breakpoints)].copy()
+        transcript_exon_df = transcript_exon_df[transcript_exon_df['Read_ID'].isin(reads_with_both_breakpoints)].copy()
+        
         # Determine exon ranges for reconstruction
         data_A = transcript_exon_df[transcript_exon_df['Actual_order'] == 'A'].copy()
         data_B = transcript_exon_df[transcript_exon_df['Actual_order'] == 'B'].copy()
@@ -386,7 +398,7 @@ def run_phase4_exon_processing(selected_transcripts: pd.DataFrame, exon_bed_path
             'breakpoint_B': breakpoint_B,
             'processed_A': processed_A,
             'processed_B': processed_B,
-            'n_reads_with_breakpoints': len(summary_total['Read_ID'].unique()),
+            'n_reads_with_breakpoints': len(reads_with_both_breakpoints),
             'n_total_exon_segments': len(summary_total)
         }
         
