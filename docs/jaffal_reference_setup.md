@@ -1,6 +1,6 @@
-# JaffaL Reference Files Setup Guide
+# JAFFAL Reference Files Setup Guide
 
-JaffaL requires specific reference files that must be downloaded separately from UCSC databases. This guide provides step-by-step instructions for downloading and organizing these files.
+JAFFAL requires specific reference files that must be downloaded separately from UCSC databases. This guide provides step-by-step instructions for downloading and organizing these files.
 
 ## Overview
 
@@ -75,7 +75,7 @@ Navigate to [UCSC Table Browser](https://genome.ucsc.edu/cgi-bin/hgTables)
 
 ## Step 3: File Organization
 
-Create a dedicated directory for JaffaL reference files:
+Create a dedicated directory for JAFFAL reference files:
 
 ```bash
 mkdir -p ./references/jaffal
@@ -122,15 +122,15 @@ jaffal:
 ## Troubleshooting
 
 ### Version Mismatch Errors
-- Ensure all reference files (genome, GTF, transcriptome, JaffaL files) use identical genome builds and annotation versions
-- Check that your main references and JaffaL references match exactly
+- Ensure all reference files (genome, GTF, transcriptome, JAFFAL files) use identical genome builds and annotation versions
+- Check that your main references and JAFFAL references match exactly
 
 ### File Not Found Errors
 - Verify all paths in `config.yaml` point to existing files
 - Use absolute paths if relative paths cause issues
 - Check file permissions
 
-### JaffaL Setup Failures
+### JAFFAL Setup Failures
 - Ensure the genome FASTA file remains compressed (`.gz`)
 - Ensure annotation files (.fasta, .bed, .tab) are uncompressed
 - Verify file integrity after download
@@ -142,7 +142,7 @@ jaffal:
 
 ## Additional Resources
 
-- [JaffaL Official Wiki](https://github.com/Oshlack/JAFFA/wiki/FAQandTroubleshooting#how-can-i-run-jaffa-with-hg19-or-mm10)
+- [JAFFAL Official Wiki](https://github.com/Oshlack/JAFFA/wiki/FAQandTroubleshooting#how-can-i-run-jaffa-with-hg19-or-mm10)
 - [UCSC Genome Browser Help](https://genome.ucsc.edu/FAQ/)
 - [GENCODE Release Information](https://www.gencodegenes.org/)
 
