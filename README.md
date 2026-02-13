@@ -27,7 +27,7 @@ TYPHON is named after the mythological father of the Chimera. Like the mythologi
 ### Prerequisites
 - Linux (Ubuntu 18.04+)
 - Conda/Mamba package manager
-- 32+ GB RAM (64+ GB recommended for large datasets or if other processes running etc.)
+- 64+ GB RAM (128+ GB recommended for large datasets or if other processes running etc.)
 - 50+ GB free disk space (minimum)
 - Java 11+ and Perl rename utility (installation instructions below)
 
