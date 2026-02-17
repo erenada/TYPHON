@@ -596,41 +596,23 @@ class BlastSetupProcessor:
     
     def _create_original_ont_file(self, sequences_file: str):
         """
-        Create Original_ONT_overlapping_mRNA_chimeras_fasta.fa with Chimera_ID headers.
+        Create Original_ONT_overlapping_mRNA_chimeras_fasta.fa with Read_ID headers.
         
-        Converts Read_IDs to Chimera_IDs using the read_chimera_pairs.txt mapping,
-        matching the original bash script functionality.
+        Maintains read-level granularity for tracking individual reads supporting each fusion.
+        Read_IDs allow distinguishing between different reads mapping to the same GeneA:GeneB chimera.
         """
         try:
-            import pandas as pd
             from Bio import SeqIO
             
-            # Load Read_ID → Chimera_ID mapping
-            mapping_file = os.path.join(self.work_dir, 'read_chimera_pairs.txt')
-            if not os.path.exists(mapping_file):
-                self.logger.warning("Read-chimera mapping file not found, skipping Original_ONT creation")
-                return
-            
-            # Read the mapping (tab-separated: Read_ID → Chimera_ID)
-            mapping_df = pd.read_csv(mapping_file, sep='\t', header=None, names=['Read_ID', 'Chimera_ID'])
-            id_mapping = dict(zip(mapping_df['Read_ID'], mapping_df['Chimera_ID']))
-            
-            # Create Original_ONT file with converted headers
+            # Create Original_ONT file with Read_ID headers (no conversion needed)
             original_ont_file = os.path.join(self.work_dir, 'Original_ONT_overlapping_mRNA_chimeras_fasta.fa')
             
             sequences_converted = 0
             with open(original_ont_file, 'w') as out_f:
                 for record in SeqIO.parse(sequences_file, 'fasta'):
-                    read_id = record.id
-                    if read_id in id_mapping:
-                        chimera_id = id_mapping[read_id]
-                        # Write with Chimera_ID header
-                        out_f.write(f">{chimera_id}\n{record.seq}\n")
-                        sequences_converted += 1
-                    else:
-                        # Keep original Read_ID if no mapping found
-                        out_f.write(f">{read_id}\n{record.seq}\n")
-                        sequences_converted += 1
+                    # Keep original Read_ID for granularity
+                    out_f.write(f">{record.id}\n{record.seq}\n")
+                    sequences_converted += 1
             
             self.logger.info(f"Created Original_ONT file with {sequences_converted} sequences: {original_ont_file}")
             

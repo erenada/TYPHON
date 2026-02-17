@@ -179,6 +179,10 @@ class SequenceReconstructor:
             # Cleanup temporary decompressed genome if we created one
             if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
                 os.remove(genome_for_bedtools)
+                # Also cleanup the .fai index created by bedtools
+                fai_file = f"{genome_for_bedtools}.fai"
+                if os.path.exists(fai_file):
+                    os.remove(fai_file)
                 self.logger.info("Cleaned up temporary decompressed genome file")
             
             return geneA_fasta, geneB_fasta
@@ -189,12 +193,20 @@ class SequenceReconstructor:
             # Cleanup on error too
             if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
                 os.remove(genome_for_bedtools)
+                # Also cleanup the .fai index created by bedtools
+                fai_file = f"{genome_for_bedtools}.fai"
+                if os.path.exists(fai_file):
+                    os.remove(fai_file)
             raise
         except Exception as e:
             self.logger.error(f"Sequence extraction failed: {e}")
             # Cleanup on error too
             if genome_for_bedtools != self.genome_fasta and os.path.exists(genome_for_bedtools):
                 os.remove(genome_for_bedtools)
+                # Also cleanup the .fai index created by bedtools
+                fai_file = f"{genome_for_bedtools}.fai"
+                if os.path.exists(fai_file):
+                    os.remove(fai_file)
             raise
 
 
