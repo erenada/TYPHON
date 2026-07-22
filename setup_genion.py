@@ -4,8 +4,8 @@ Automated setup script for custom Genion build for TYPHON Pipeline.
 
 This script implements the complete TYPHON Genion customization process:
 - Clones official Genion repo
-- Replaces annotate.cpp with TYPHON custom version (read ID tracking)
-- Applies additional cleanup patch
+- Patches annotate.cpp with TYPHON customizations (read ID tracking, debug output)
+- Applies GCC 13+ compatibility fix to cxxopts.hpp
 - Compiles with configurable debug flags
 - Installs binary to configurable location
 
@@ -15,7 +15,6 @@ The TYPHON modifications enable:
 3. Enhanced tracking for fusion validation
 
 Authors: Harry Kane, PhD; Eren Ada, PhD
-Based on AI_GENION_CUSTOMIZATION_GUIDE.md and detailed analysis
 """
 import os
 import sys
@@ -91,71 +90,83 @@ def run_cmd(cmd, cwd=None, check=True, log_path=None):
 def verify_typhon_files(script_dir, log_path):
     """Verify that required TYPHON customization files exist."""
     required_files = {
-        'custom_annotate': os.path.join(script_dir, 'Genion_files', 'annotate.cpp'),
-        'patch_file': os.path.join(script_dir, 'Genion_files', 'genion_custom.patch')
+        'annotate_patch': os.path.join(script_dir, 'Genion_files', 'annotate.cpp.patch')
     }
-    
+
     missing_files = []
     for name, path in required_files.items():
         if not os.path.exists(path):
             missing_files.append(f"{name}: {path}")
-    
+
     if missing_files:
-        error_msg = f"Missing required TYPHON customization files:\n" + "\n".join(missing_files)
+        error_msg = "Missing required TYPHON customization files:\n" + "\n".join(missing_files)
         log_to_file(f"ERROR: {error_msg}", log_path)
         raise FileNotFoundError(error_msg)
-    
+
     log_to_file("All required TYPHON customization files found", log_path)
     return required_files
 
 
-def apply_typhon_modifications(temp_dir, custom_annotate_path, patch_path, log_path):
+def apply_typhon_modifications(temp_dir, patch_path, log_path):
     """
     Apply TYPHON modifications to Genion source code.
-    
-    This implements the complete customization process:
+
     1. Backup original annotate.cpp
-    2. Replace with TYPHON version (includes read ID tracking)
-    3. Apply additional cleanup patch
+    2. Apply TYPHON unified diff patch to annotate.cpp (enables full debug output
+       and adds read ID tracking - one line per supporting read)
+    3. Fix cxxopts.hpp missing <cstdint> include (GCC 13+ compatibility)
     """
     src_dir = os.path.join(temp_dir, "src")
     original_annotate = os.path.join(src_dir, "annotate.cpp")
     backup_annotate = os.path.join(src_dir, "annotate.cpp.original")
-    
+
     # Step 1: Backup original file
     if os.path.exists(original_annotate):
         shutil.copy2(original_annotate, backup_annotate)
         log_to_file("Backed up original annotate.cpp", log_path)
-    
-    # Step 2: Replace with TYPHON custom version
-    shutil.copy2(custom_annotate_path, original_annotate)
-    log_to_file("Replaced annotate.cpp with TYPHON custom version", log_path)
-    log_to_file("  - Enables full debug output by default", log_path)
-    log_to_file("  - Adds read ID tracking to fusion output", log_path)
-    log_to_file("  - Outputs one line per supporting read", log_path)
-    
-    # Step 3: Apply additional cleanup patch
-    try:
-        with open(patch_path, 'r') as patch_file:
-            result = subprocess.run(
-                ["patch", "-p0"], 
-                input=patch_file.read(),
-                text=True,
-                cwd=temp_dir, 
-                capture_output=True
+
+    # Step 2: Apply TYPHON patch to the freshly cloned annotate.cpp
+    log_to_file("Applying TYPHON annotate.cpp patch...", log_path)
+    with open(patch_path, 'r') as patch_file:
+        result = subprocess.run(
+            ["patch", "-p0"],
+            input=patch_file.read(),
+            text=True,
+            cwd=temp_dir,
+            capture_output=True
+        )
+    if result.returncode == 0:
+        log_to_file("TYPHON patch applied successfully", log_path)
+        log_to_file("  - Enables full debug output by default", log_path)
+        log_to_file("  - Adds read ID tracking to fusion output", log_path)
+        log_to_file("  - Outputs one line per supporting read", log_path)
+    else:
+        log_to_file(f"ERROR: Patch failed:\n{result.stderr}", log_path)
+        raise subprocess.CalledProcessError(result.returncode, ["patch", "-p0"])
+
+    # Step 3: Fix cxxopts.hpp missing <cstdint> include (GCC 13+ compatibility)
+    # cxxopts relied on <cstdint> being pulled in implicitly - GCC 13+ requires it explicitly
+    cxxopts_path = os.path.join(temp_dir, "lib", "cxxopts", "cxxopts.hpp")
+    if os.path.exists(cxxopts_path):
+        with open(cxxopts_path, 'r') as f:
+            content = f.read()
+        if '#include <cstdint>' not in content:
+            content = content.replace(
+                '#include <regex>',
+                '#include <regex>\n#include <cstdint>'
             )
-            if result.returncode == 0:
-                log_to_file("Applied additional cleanup patch", log_path)
-            else:
-                log_to_file(f"WARNING: Patch application had issues: {result.stderr}", log_path)
-    except subprocess.CalledProcessError as e:
-        log_to_file(f"WARNING: Patch application failed (may be already applied): {e}", log_path)
-        # Continue - the main customization (file replacement) is already done
+            with open(cxxopts_path, 'w') as f:
+                f.write(content)
+            log_to_file("Patched cxxopts.hpp: added #include <cstdint> (GCC 13+ compatibility)", log_path)
+        else:
+            log_to_file("cxxopts.hpp already has <cstdint> - skipping", log_path)
+    else:
+        log_to_file("WARNING: cxxopts.hpp not found - skipping patch", log_path)
 
 
-def cleanup_files(patch_path, custom_annotate_path, log_path):
+def cleanup_files(annotate_patch_path, log_path):
     """Remove customization files if requested."""
-    files_to_clean = [patch_path, custom_annotate_path]
+    files_to_clean = [annotate_patch_path]
     for f in files_to_clean:
         if os.path.exists(f):
             try:
@@ -254,9 +265,8 @@ Examples:
         log_to_file("", log_path)
         log_to_file("Step 2: Applying TYPHON customizations...", log_path)
         apply_typhon_modifications(
-            temp_dir, 
-            required_files['custom_annotate'],
-            required_files['patch_file'],
+            temp_dir,
+            required_files['annotate_patch'],
             log_path
         )
 
@@ -321,13 +331,11 @@ Examples:
         log_to_file(f"Compilation mode: {'Debug' if debug_compilation else 'Optimized'}", log_path)
         log_to_file("=" * 70, log_path)
         
-        # Optional cleanup
         if args.cleanup:
             log_to_file("", log_path)
             log_to_file("Performing cleanup of source files...", log_path)
             cleanup_files(
-                required_files['patch_file'], 
-                required_files['custom_annotate'], 
+                required_files['annotate_patch'],
                 log_path
             )
             
