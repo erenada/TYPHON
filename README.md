@@ -14,7 +14,7 @@ TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequen
 
 **Key Features:**
 - **Multi-tool integration** - Combines three fusion detection algorithms
-- **Long-read optimized** - Designed for Nanopore and PacBio technologies  
+- **Long-read optimized** - Designed for Nanopore 
 - **Sequence-based validation** - Reconstructs chimeric sequences with breakpoint coordinates
 - **Filtering** - Cross-validation and BLAST-based filtering
 
