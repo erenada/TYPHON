@@ -81,7 +81,7 @@ Create a dedicated directory for JAFFAL reference files:
 mkdir -p ./references/jaffal
 ```
 
-**IMPORTANT:** Place all four downloaded files in this directory together. All files must be in the same location for the setup script to work properly.
+**IMPORTANT:** Copy all four downloaded files to this directory together. All files must be in the same location for the setup script to work properly.
 
 ```
 ./references/jaffal/
