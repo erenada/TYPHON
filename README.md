@@ -10,17 +10,17 @@
 
 ## Overview
 
-TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing data. It integrates three fusion detection tools (LongGF, Genion, JAFFAL) with a five-phase exon repair protocol for sequence-based validation.
+TYPHON is a pipeline for chimeric RNA detection from long-read direct RNA-sequencing data. It integrates three fusion detection tools (LongGF, Genion, JAFFAL) with a multi-phase exon repair protocol for identification of candidate chimeric RNA molecules.
 
 **Key Features:**
 - **Multi-tool integration** - Combines three fusion detection algorithms
-- **Long-read optimized** - Designed for Nanopore 
-- **Sequence-based validation** - Reconstructs chimeric sequences with breakpoint coordinates
-- **Filtering** - Cross-validation and BLAST-based filtering
+- **Long-read optimized** - Designed for Nanopore direct RNA sequencing data 
+- **Exon repair** - Reconstructs chimeric sequences with breakpoint coordinates
+- **Filtering** - BLAST-based filtering to confirm that chimeric RNA reads align to transcripts from designated parent genes
 
-## About the Name
+## What's with the name?
 
-TYPHON is named after the mythological father of the Chimera. Like the mythological chimera that combines parts from different creatures, this pipeline detects chimeric RNA molecules formed by the fusion of different genes.
+TYPHON is named after the mythological father of the Chimera from greek myth. Like the mythological chimera that combines parts from different creatures, this pipeline detects chimeric RNA molecules formed by fusing sequences derived from different genes.
 
 ## Installation
 
@@ -28,7 +28,7 @@ TYPHON is named after the mythological father of the Chimera. Like the mythologi
 - Linux (Ubuntu 18.04+)
 - Conda/Mamba package manager
 - 64+ GB RAM (128+ GB recommended for large datasets or if other processes running etc.)
-- 50+ GB free disk space (minimum)
+- Free disk space of roughly 8-10x your gzipped input size
 - Java 11+ and Perl rename utility (installation instructions below)
 
 ### System Dependencies Installation
@@ -75,7 +75,7 @@ cp config_template.yaml config.yaml
 ```
 
 **Essential setup:**
-1. Download your GENCODE reference files of interest (see https://www.gencodegenes.org/). Currently, TYPHON only supports GENCODE references, support for ENSEMBL and other formats is planned for the future.
+1. Download your GENCODE reference files of interest (see https://www.gencodegenes.org/). Currently, TYPHON only supports GENCODE references for the primary reference files, support for ENSEMBL and other formats may be added in the future.
 2. Update file paths in the `references:` section of the config.yaml file (genome, GTF, transcriptome). The config.yaml is used to specify all of the information that TYPHON requires.
 3. Set input FASTQ directory path.
 4. Configure JAFFAL reference files (see [JAFFAL Reference Setup Guide](docs/jaffal_reference_setup.md)).
@@ -102,8 +102,7 @@ python setup_jaffal.py
 # Verify installation
 ./bin/genion --version  # Should show: 1.2.3-dirty
 java -version           # Should show Java 11+
-conda run -n typhon_env which minimap2 longgf samtools
-conda run -n typhon_env rename --man | head -5  # Check rename utility
+python typhon_main.py --help # Should print the help message
 ```
 
 ## Usage
@@ -138,16 +137,16 @@ python typhon_main.py --dry-run
 ## Pipeline Modules
 
 ### LongGF
-Direct RNA-seq fusion detection using minimap2 alignments. Identifies fusion candidates through split alignments with configurable overlap thresholds and pseudogene filtering.
+Chimeric RNA detection using LongGF. LongGF carries out fusion detection on alignments and was published by Liu *et al*., 2020; doi:10.1186/s12864-020-07207-4. Provides configurable overlap thresholds and pseudogene filtering options.
 
 ### Genion (slightly modified for usage with TYPHON)
-Graph-based fusion detection with TYPHON-specific enhancements. Builds splice graphs from SAM alignments with enhanced debug output and failure analysis. Slightly modified during TYPHON setup to enable the inclusion of chimeric RNA reads which normally fail to pass Genion's stringent filtering protocols.
+Chimeric RNA detection using Genion. Genion carries out fusion detection utilizing a dynamic programming exon chaining algorithm and was published by Karaoglanoglu *et al*., 2022; doi:10.1186/s12864-022-08339-5. Please note that Genion is slightly modified during TYPHON setup to enable the inclusion of candidate chimeric RNA reads which normally fail to pass Genion's stringent filtering protocols, as TYPHON opts to be permissive by default with respect to prospective chimeric RNA sequences. As such, this results in a much larger number of potential chimeras being called which is not indicative of typical Genion outputs.
 
 ### JAFFAL (Long read fusion detection protocol of JAFFA)
-Assembly-based fusion detection optimized for long-read data. Uses bpipe workflow with Velvet/Oases assembly and configurable memory management for large datasets.
+Chimeric RNA detection using JAFFAL. JAFFAL carries out fusion detection using both transcriptomic and genomic alignment and was published by Davidson *et al*., 2022; doi:10.1186/s13073-015-0167-x. Uses bpipe workflow and runs as a complete end-to-end pipeline.
 
 ### Exon Repair Protocol
-Five-phase sequence reconstruction: (1) data integration, (2) BLAST setup, (3) transcript selection, (4) exon boundary detection, (5) sequence reconstruction. Produces chimeric sequences with breakpoint coordinates.
+Five-phase sequence reconstruction: (1) data integration, (2) BLAST setup, (3) transcript selection, (4) exon boundary detection, (5) sequence reconstruction. Produces exon-repaired chimeric sequences with breakpoint coordinates.
 
 ## Output Structure
 
@@ -223,12 +222,10 @@ These are the primary outputs of the exon repair module and can be used for down
 - **Path not found:** Use absolute paths in configuration
 - **Missing SAM files:** Run LongGF before Genion
 - **JAFFAL setup failure:** Check Java 11+ installation and JAFFAL reference files
-- **Out of memory errors:** Enable `process_samples_sequentially: true` for JAFFAL
 
 ## Performance Notes
 
 - **Storage:** Requires 2-3x input FASTQ size for temporary processing space
-- **Memory:** Enable `process_samples_sequentially: true` for JAFFAL on memory-constrained systems  
 - **Optimization:** SSD storage recommended for faster I/O performance
 
 ## Citations and References
