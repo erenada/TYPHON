@@ -234,7 +234,7 @@ TYPHON integrates several published bioinformatics tools. Please cite the origin
 
 ### TYPHON Pipeline
 
-**Citation for TYPHON will be provided once the manuscript is published.**
+Venezia, O., Kane, H., Du, G. et al. Functional chimeric mRNAs encode proteins in mammalian immunity. Nature (2026). https://doi.org/10.1038/s41586-026-10982-x
 
 ### Core Tools
 
